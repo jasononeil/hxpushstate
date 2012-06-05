@@ -1,0 +1,6 @@
+<mlib bin="build">
+	<resources>
+		<resource type="src" path="src" dest="" />
+		<resource type="src" path="build/haxelib.xml" dest="haxelib.xml" />
+	</resources>
+</mlib>
