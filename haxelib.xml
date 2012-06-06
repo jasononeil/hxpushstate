@@ -1,7 +1,7 @@
-<project name="pushstate" url="" license="MIT">
+<project name="pushstate" url="https://github.com/jasononeil/hxpushstate" license="MIT">
 	<user name="jason"/>
 	<tag v="js"/>
-    <tag v="pushstate"/>
+ 	<tag v="pushstate"/>
 	<description>A basic JS library for using PushState to update the browser address bar without doing a full page reload.  Currently depends on jQuery.</description>
 	<version name="0.2.0.0">Basics are working.  API may need to stabilise.  Documentation could improve.</version>
 </project>

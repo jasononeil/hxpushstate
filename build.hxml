@@ -3,6 +3,6 @@
 -cp src/
 -main demo.Test
 -js build/test.js
--xml build/haxelib.xml
+-xml build/haxedoc.xml
 --next
 --macro include('pushstate')

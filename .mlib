@@ -1,6 +1,7 @@
 <mlib bin="build">
 	<resources>
-		<resource type="src" path="src" dest="" />
-		<resource type="src" path="build/haxelib.xml" dest="haxelib.xml" />
+		<resource type="src" path="src/pushstate/" dest="pushstate/" />
+		<resource path="build/haxedoc.xml" dest="haxedoc.xml" />
+		<resource type="license" path="license.mtt" />
 	</resources>
 </mlib>
