@@ -76,7 +76,7 @@ class PushState
 			handleOnPopState(null);
 
 			// Load when a <a href="#" rel="pushstate">PushState Link</a> is pressed
-			new JQuery("a[rel=pushstate]").click(function (e) {
+			new JQuery(js.Lib.document).delegate("a[rel=pushstate]", "click", function (e) {
 				push(JQuery.cur.attr("href"));
 				e.preventDefault();
 			});
