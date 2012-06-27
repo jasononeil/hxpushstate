@@ -82,7 +82,7 @@ class PushState
 			});
 			
 			// Load when we get a window.onPopState() event
-			Reflect.setField("window", "onpopstate", handleOnPopState);
+			Reflect.setField(js.Lib.window, "onpopstate", handleOnPopState);
 		});
 	}
 
