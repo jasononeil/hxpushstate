@@ -88,3 +88,32 @@ Dispatch: PushState.myevent.dispatch(state:StateData);
 	// Before URL changes, or before PushState.replace() has been called
 	PushState.beforeStateChange
 
+### Demo
+
+To run the demo:
+
+1. Clone the repository, and run `haxe build.hxml`.  
+2. From the 'build' directory, run `nekotools server -rewrite`
+3. Open `http://localhost:2000/` in your browser
+
+This demo shows a few things:
+
+ * Listening to pushstate events and updating the page accordingly
+ * Using rel="pushstate" to trigger changes to the page's history
+ * Using JS events (triggered from a form in this case) to trigger changes to the page's history
+ * Using forward and back to trigger changes to the page's history
+ * Providing a fallback for cases where the JS wasn't triggered, e.g. Old browsers, deep linking from another site or bookmark, etc.  The way this works:
+ 	* When the page first loads, we check the URL
+ 	* If it's not the default, we trigger a pushstate event and let the content update itself.
+ 	* This ensures the code will work on older browsers, or if someone arrives via a link or bookmark, etc.
+
+[Click here to view the source of the demo](https://github.com/jasononeil/hxpushstate/blob/master/src/demo/Test.hx)
+
+### Notes
+
+Currently this library has 2 dependencies:
+
+ * hsl-pico-1
+ * jQuery (from the Haxe std library)
+
+The dependence on jQuery can be removed, or an alternative offered, if there's demand for it.  
