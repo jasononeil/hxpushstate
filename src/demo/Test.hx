@@ -21,6 +21,7 @@ class Test
 	public static function main()
 	{
 		// First we initialise the pushstate library for this page
+		// PushState events will be triggered by forward/back and links with rel="pushstate"
 		PushState.init();
 
 		// Next we add a listener to any changes
@@ -39,9 +40,10 @@ class Test
 
 		});
 
-		// 
+		// We can also trigger changes to the history API (and therefore pushstate events) manually
 		new JQuery(js.Lib.document).ready(function (e) {
 			new JQuery("#animal-form").submit(function (e) {
+				// When the form is submitted, use the value of the input as our new URL, and trigger PushState
 				var value = JQuery.cur.find("input").val();
 				PushState.push("/" + value); 
 				e.preventDefault();
