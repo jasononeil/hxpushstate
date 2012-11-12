@@ -1,7 +1,11 @@
 Pushstate
 =========
 
-This is a haxe library wrapping the basic Pushstate functionality for Javascript.  It allows you to update functionality
+This is a haxe library wrapping the basic Pushstate functionality for Javascript.  It allows you to update the contents of the page, in an AJAX like way, while still updating the browser's history - so Forward, Back and Bookmark continue to function normally.
+
+The aim of this library is to give Haxe/JS very simple access to the underlying browser functionality, and to help with some very basic use-cases.
+
+We do not try to provide a fallback for older browsers currently.
 
 ### Installation
 
