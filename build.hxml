@@ -1,5 +1,4 @@
 -lib hsl-pico-1
--lib xirsys_stdjs
 -cp src/
 -main demo.Test
 -js build/test.js
