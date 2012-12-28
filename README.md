@@ -39,54 +39,18 @@ To manually force a page change:
 	// Path is relative to root directory of app
 	PushState.push("/go/somewhere/"); 
 
-To associate some data with the state
+To change the URL without creating a new item in the browser history
 
-	PushState.push(url, title, data);
-
-To update the data associated with the current state
-
-	PushState.replace(url, title, data);
+	PushState.replace("/go/somewhere/else/"); 
 
 ### Methods
 
-	PushState.init();
-	PushState.addListener();
-	PushState.removeListener();
-	PushState.push();
-	PushState.replace();
-
-### Events
-
-**How to use events:**
-
-Bind:     PushState.myevent.bind(fn:StateData->Void);
-Unbind:   PushState.myevent.unbind(fn:StateData->Void);
-Dispatch: PushState.myevent.dispatch(state:StateData);
-
-**Events:**
-
-	// After the URL of the page changes (including first page load)
-	//  - when page first loads
-	//  - clicked a link with [rel='pushstate']
-	//  - clicked "forward" or "back" in the browser
-	//  - used PushState.push();
-	PushState.onPopState
-
-	// Before the URL of the page changes (so you can save data, update 
-	// current state etc.)
-	PushState.beforePopState
-
-
-	// After URL changes, or after PushState.replace() has been called
-	//  - when page first loads
-	//  - clicked a link with [rel='pushstate']
-	//  - clicked "forward" or "back" in the browser
-	//  - used PushState.push();
-	//  - used PushState.replace();
-	PushState.onStateChange
-
-	// Before URL changes, or before PushState.replace() has been called
-	PushState.beforeStateChange
+	PushState.init(basePath:String);
+	PushState.addListener(f:String->Void);
+	PushState.removeListener(f:String->Void);
+	PushState.clearEventListeners();
+	PushState.push(url:String);
+	PushState.replace(url:String);
 
 ### Demo
 
@@ -111,9 +75,4 @@ This demo shows a few things:
 
 ### Notes
 
-Currently this library has 2 dependencies:
-
- * hsl-pico-1
- * jQuery (from the Haxe std library)
-
-The dependence on jQuery can be removed, or an alternative offered, if there's demand for it.  
+Currently this library is dependant on jQuery from the Haxe Standard Library, though this can probably be removed easily enough if there is demand for it.
