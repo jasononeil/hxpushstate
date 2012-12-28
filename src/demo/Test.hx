@@ -18,6 +18,12 @@ class Test
 {
 	static var stateChangeCount = 0;
 
+	#if haxe_211
+		static var doc = js.Browser.document;
+	#else 
+		static var doc = js.Lib.document;
+	#end
+
 	public static function main()
 	{
 		// First we initialise the pushstate library for this page
@@ -25,7 +31,7 @@ class Test
 		PushState.init();
 
 		// Next we add a listener to any changes
-		PushState.onStateChange.bind(function (event) {
+		PushState.addEventListener(function (url) {
 
 			// Show user if this was a page reload or pushstate
 			stateChangeCount++;
@@ -36,12 +42,12 @@ class Test
 			
 			// Change the content.  
 			// In real life this would probably be an AJAX call
-			new JQuery("#content").text("I want to become a " + event.url);
+			new JQuery("#content").text("I want to become a " + url);
 
 		});
 
 		// We can also trigger changes to the history API (and therefore pushstate events) manually
-		new JQuery(js.Lib.document).ready(function (e) {
+		new JQuery(untyped doc).ready(function (e) {
 			new JQuery("#animal-form").submit(function (e) {
 				// When the form is submitted, use the value of the input as our new URL, and trigger PushState
 				var value = JQuery.cur.find("input").val();

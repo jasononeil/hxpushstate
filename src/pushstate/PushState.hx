@@ -12,7 +12,6 @@
 package pushstate;
 
 import js.JQuery;
-import hsl.haxe.DirectSignaler;
 import pushstate.History;
 import pushstate.PopStateEvent;
 
@@ -34,23 +33,19 @@ class PushState
 	static var inst:PushState;
 	static var history:History;
 	static var basePath:String;
+	static var listeners:Array<String->Void>;
 
-	/**
-	* onStateChange is fired when the URL of the page changes, so
-	*  - When the page first loads
-	*  - When a link is clicked with the rel='pushstate' attribute
-	*  - Back or Forward is clicked in the browser
-	*  - PushState.push() is called manually
-	* Listen to this event to be able to change your pages content
-	* as the URL is updated.
-	*/
-	static public var onStateChange:DirectSignaler<StateData>;
+	#if haxe_211
+		static var win = js.Browser.window;
+		static var doc = js.Browser.document;
+	#else 
+		static var win = js.Lib.window;
+		static var doc = js.Lib.document;
+	#end
 
 	function new()
 	{
-		// HSL Signalers need to be tied to an instance
-		// Hence needing to have a singleton.
-		PushState.onStateChange = new DirectSignaler(this);
+		listeners = [];
 	}
 
 	/** 
@@ -67,22 +62,22 @@ class PushState
 	{
 		// Set up the instance
 		inst = new PushState();
-		history = Reflect.field(js.Lib.window, "history");
+		history = Reflect.field(win, "history");
 		PushState.basePath = basePath;
 
 		// Load on window.onload(), so that permanent URLs work
-		new JQuery(js.Lib.document).ready(function (e) {
+		new JQuery(untyped doc).ready(function (e) {
 			// Trigger Events
 			handleOnPopState(null);
 
 			// Load when a <a href="#" rel="pushstate">PushState Link</a> is pressed
-			new JQuery(js.Lib.document).delegate("a[rel=pushstate]", "click", function (e) {
+			new JQuery(untyped doc).delegate("a[rel=pushstate]", "click", function (e) {
 				push(JQuery.cur.attr("href"));
 				e.preventDefault();
 			});
 			
 			// Load when we get a window.onPopState() event
-			Reflect.setField(js.Lib.window, "onpopstate", handleOnPopState);
+			Reflect.setField(win, "onpopstate", handleOnPopState);
 		});
 	}
 
@@ -95,10 +90,7 @@ class PushState
 		path = stripURL(path);
 		
 		// Pass back and launch event
-		var state:StateData = {
-			url: path
-		};
-		PushState.onStateChange.dispatch(state);
+		dispatch(path);
 	}
 
 	static function stripURL(path:String)
@@ -111,6 +103,32 @@ class PushState
 		return path;
 	}
 
+	public static function addEventListener(f:String->Void)
+	{
+		listeners.push(f);
+	}
+
+	public static function removeEventListener(f:String->Void)
+	{
+		listeners.remove(f);
+	}
+
+	public static function clearEventListeners()
+	{
+		while (listeners.length > 0)
+		{
+			listeners.pop();
+		}
+	}
+
+	static function dispatch(url:String)
+	{
+		for (l in listeners)
+		{
+			l(url);
+		}
+	}
+
 	/**
 	* push()
 	* Use this to manually change the URL of the page without reloading.
@@ -119,11 +137,8 @@ class PushState
 	*/
 	public static function push(url:String)
 	{
-		var state:StateData = {
-			url: stripURL(url)
-		};
 		history.pushState({}, "", url);
-		PushState.onStateChange.dispatch(state);
+		dispatch(url);
 	}
 
 	/**
@@ -141,23 +156,7 @@ class PushState
 	*/
 	public static function replace(url:String)
 	{
-		var state:StateData = {
-			url: stripURL(url)
-		};
 		history.pushState({}, "", url);
-		PushState.onStateChange.dispatch(state);
+		dispatch(url);
 	}
-}
-
-/**
-* StateData
-* 
-* Contains data about the current History state.  For now we'll just use "url",
-* but in future may support "title" and "data" from the browser History API.
-*/
-typedef StateData = {
-	var url:String;
-	// Future: support these also?
-	//var data:Dynamic
-	//var title:String
 }
