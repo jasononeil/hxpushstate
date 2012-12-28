@@ -1,6 +1,6 @@
--lib hsl-pico-1
 -cp src/
 -main demo.Test
+-D embed_js
 -js build/test.js
 -xml build/haxedoc.xml
 --next
