@@ -1,4 +1,4 @@
-<project name="pushstate" url="https://github.com/jasononeil/hxpushstate" license="">
+<project name="pushstate" url="https://github.com/jasononeil/hxpushstate" license="MIT">
 	<user name="jason"/>
 	<tag v="js" />
 	<tag v="pushstate" />
