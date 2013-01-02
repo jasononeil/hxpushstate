@@ -1,7 +1,7 @@
-<project name="pushstate" url="https://github.com/jasononeil/hxpushstate" license="MIT">
+<project name="pushstate" url="https://github.com/jasononeil/hxpushstate" license="">
 	<user name="jason"/>
 	<tag v="js" />
 	<tag v="pushstate" />
 	<description>A basic JS library for using PushState to update the browser address bar without doing a full page reload.  Currently depends on jQuery.</description>
-	<version name="0.2.2.0">Removed dependency on xirsys_stdjs. Updated README and demo</version>
+	<version name="0.3.0.0">Compatibility for Haxe3, removed dependence on HSL.  Simplified API, slightly breaking changes</version>
 </project>
