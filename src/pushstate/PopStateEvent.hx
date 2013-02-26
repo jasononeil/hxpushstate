@@ -11,8 +11,9 @@
 
 package pushstate;
 
-
-#if xirsys_stdjs
+#if haxe3
+	import js.html.Event;
+#elseif xirsys_stdjs
 	import js.w3c.level3.Events;
 #else 
 	@:native("Object")
