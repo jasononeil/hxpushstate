@@ -18,7 +18,7 @@ class Test
 {
 	static var stateChangeCount = 0;
 
-	#if haxe_211
+	#if (haxe_211 || haxe3)
 		static var doc = js.Browser.document;
 	#else 
 		static var doc = js.Lib.document;

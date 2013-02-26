@@ -35,7 +35,7 @@ class PushState
 	static var basePath:String;
 	static var listeners:Array<String->Void>;
 
-	#if haxe_211
+	#if (haxe_211 || haxe3)
 		static var win = js.Browser.window;
 		static var doc = js.Browser.document;
 	#else 
