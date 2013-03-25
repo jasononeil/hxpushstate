@@ -81,9 +81,15 @@ class PushState
 				// Load when a <a href="#" rel="pushstate">PushState Link</a> is pressed
 				Detox.document.on("click", "a[rel=pushstate]", function (e) {
 					var link:DOMNode = cast e.target;
-					trace (link.attr("href") + link);
-					push(link.attr("href"));
-					e.preventDefault();
+					while (link.tagName() != "a" && link.parent() != null)
+					{
+						link = link.parent();
+					}
+					if (link.tagName() == "a")
+					{
+						push(link.attr("href"));
+						e.preventDefault();
+					}
 				});
 				
 				// Load when we get a window.onPopState() event
