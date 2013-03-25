@@ -11,7 +11,15 @@
 
 package pushstate;
 
-import js.JQuery;
+#if detox
+	using Detox;
+#else 
+	import js.JQuery;
+#end
+#if (haxe3)
+	import js.Browser.window in win;
+	import js.Browser.document in doc;
+#end
 import pushstate.History;
 import pushstate.PopStateEvent;
 
@@ -31,16 +39,15 @@ import pushstate.PopStateEvent;
 class PushState 
 {
 	static var inst:PushState;
-	static var history:History;
 	static var basePath:String;
 	static var listeners:Array<String->Void>;
 
 	#if (haxe_211 || haxe3)
-		static var win = js.Browser.window;
-		static var doc = js.Browser.document;
+		static var history:js.html.History;
 	#else 
 		static var win = js.Lib.window;
 		static var doc = js.Lib.document;
+		static var history:History;
 	#end
 
 	function new()
@@ -62,23 +69,41 @@ class PushState
 	{
 		// Set up the instance
 		inst = new PushState();
-		history = Reflect.field(win, "history");
+		history = win.history;
 		PushState.basePath = basePath;
 
 		// Load on window.onload(), so that permanent URLs work
-		new JQuery(untyped doc).ready(function (e) {
-			// Trigger Events
-			handleOnPopState(null);
+		#if detox 
+			Detox.ready(function () {
+				// Trigger Events
+				handleOnPopState(null);
 
-			// Load when a <a href="#" rel="pushstate">PushState Link</a> is pressed
-			new JQuery(untyped doc).delegate("a[rel=pushstate]", "click", function (e) {
-				push(JQuery.cur.attr("href"));
-				e.preventDefault();
+				// Load when a <a href="#" rel="pushstate">PushState Link</a> is pressed
+				Detox.document.on("click", "a[rel=pushstate]", function (e) {
+					var link:DOMNode = cast e.target;
+					trace (link.attr("href") + link);
+					push(link.attr("href"));
+					e.preventDefault();
+				});
+				
+				// Load when we get a window.onPopState() event
+				win.onpopstate=handleOnPopState;
 			});
-			
-			// Load when we get a window.onPopState() event
-			Reflect.setField(win, "onpopstate", handleOnPopState);
-		});
+		#else 
+			new JQuery(untyped doc).ready(function (e) {
+				// Trigger Events
+				handleOnPopState(null);
+
+				// Load when a <a href="#" rel="pushstate">PushState Link</a> is pressed
+				new JQuery(untyped doc).delegate("a[rel=pushstate]", "click", function (e) {
+					push(JQuery.cur.attr("href"));
+					e.preventDefault();
+				});
+				
+				// Load when we get a window.onPopState() event
+				Reflect.setField(win, "onpopstate", handleOnPopState);
+			});
+		#end
 	}
 
 	static function handleOnPopState(e:Dynamic)
