@@ -15,13 +15,13 @@ package pushstate;
 	using Detox;
 #else 
 	import js.JQuery;
+	import js.JQuery.JQueryHelper.*;
 #end
-#if (haxe3)
-	import js.Browser.window in win;
-	import js.Browser.document in doc;
-#end
+
+import js.Browser.window in win;
+import js.Browser.document in doc;
+import js.html.PopStateEvent;
 import pushstate.History;
-import pushstate.PopStateEvent;
 
 /**
 * PushState
@@ -42,16 +42,9 @@ class PushState
 	static var basePath:String;
 	static var listeners:Array<String->Void>;
 
-	#if (haxe_211 || haxe3)
-		static var history:js.html.History;
-	#else 
-		static var win = js.Lib.window;
-		static var doc = js.Lib.document;
-		static var history:History;
-	#end
-
-	function new()
-	{
+	static var history:js.html.History;
+	
+	function new() {
 		listeners = [];
 	}
 
@@ -65,8 +58,7 @@ class PushState
 	*  - listens to "onpopstate" event, so we can detect browser "Back" clicks etc.
 	* In general you should call this before using any other part of the API.
 	*/
-	public static function init(?basePath = "/")
-	{
+	public static function init(?basePath = "/") {
 		// Set up the instance
 		inst = new PushState();
 		history = win.history;
@@ -81,12 +73,10 @@ class PushState
 				// Load when a <a href="#" rel="pushstate">PushState Link</a> is pressed
 				Detox.document.on("click", "a[rel=pushstate]", function (e) {
 					var link:DOMNode = cast e.target;
-					while (link.tagName() != "a" && link.parent() != null)
-					{
+					while (link.tagName() != "a" && link.parent() != null) {
 						link = link.parent();
 					}
-					if (link.tagName() == "a")
-					{
+					if (link.tagName() == "a") {
 						push(link.attr("href"));
 						e.preventDefault();
 					}
@@ -96,26 +86,25 @@ class PushState
 				win.onpopstate=handleOnPopState;
 			});
 		#else 
-			new JQuery(untyped doc).ready(function (e) {
+			J(win).ready(function (e) {
 				// Trigger Events
 				handleOnPopState(null);
 
 				// Load when a <a href="#" rel="pushstate">PushState Link</a> is pressed
-				new JQuery(untyped doc).delegate("a[rel=pushstate]", "click", function (e) {
-					push(JQuery.cur.attr("href"));
+				J(doc.body).delegate("a[rel=pushstate]", "click", function (e) {
+					push(JTHIS.attr("href"));
 					e.preventDefault();
 				});
 				
 				// Load when we get a window.onPopState() event
-				Reflect.setField(win, "onpopstate", handleOnPopState);
+				win.onpopstate = handleOnPopState;
 			});
 		#end
 	}
 
-	static function handleOnPopState(e:Dynamic)
-	{
+	static function handleOnPopState(e:Dynamic) {
 		// Read the path from the document location
-		var path:String = untyped __js__('document.location.pathname');
+		var path:String = doc.location.pathname;
 		
 		// Get the relevant part of the URL
 		path = stripURL(path);
@@ -124,38 +113,30 @@ class PushState
 		dispatch(path);
 	}
 
-	static function stripURL(path:String)
-	{
+	static function stripURL(path:String) {
 		// strip the basePath from the path, if it is present
-		if (path.substr(0,basePath.length) == basePath)
-		{
+		if (path.substr(0,basePath.length) == basePath) {
 			path = path.substr(basePath.length);
 		}
 		return path;
 	}
 
-	public static function addEventListener(f:String->Void)
-	{
+	public static function addEventListener(f:String->Void) {
 		listeners.push(f);
 	}
 
-	public static function removeEventListener(f:String->Void)
-	{
+	public static function removeEventListener(f:String->Void) {
 		listeners.remove(f);
 	}
 
-	public static function clearEventListeners()
-	{
-		while (listeners.length > 0)
-		{
+	public static function clearEventListeners() {
+		while (listeners.length > 0) {
 			listeners.pop();
 		}
 	}
 
-	static function dispatch(url:String)
-	{
-		for (l in listeners)
-		{
+	static function dispatch(url:String) {
+		for (l in listeners) {
 			l(url);
 		}
 	}
@@ -166,8 +147,7 @@ class PushState
 	* An onStateChange event is dispatched, which you can use to load 
 	* the appropriate content.
 	*/
-	public static function push(url:String)
-	{
+	public static function push(url:String) {
 		history.pushState({}, "", url);
 		dispatch(url);
 	}
@@ -185,8 +165,7 @@ class PushState
 	*    it would go to "/kittens", because a new History item
 	*    was not created.
 	*/
-	public static function replace(url:String)
-	{
+	public static function replace(url:String) {
 		history.pushState({}, "", url);
 		dispatch(url);
 	}
