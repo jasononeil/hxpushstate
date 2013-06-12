@@ -11,7 +11,11 @@
 
 package demo;
 
-import js.JQuery.JQueryHelper.*;
+#if detox 
+	using Detox;
+#else 
+	import js.JQuery.JQueryHelper.*;
+#end 
 import pushstate.PushState;
 import js.Browser.document in doc;
 
