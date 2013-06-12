@@ -1,3 +1,2 @@
-build/pushstate/
-build/pushstate.zip
+build/
 *.sublime-*
