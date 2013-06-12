@@ -11,18 +11,13 @@
 
 package demo;
 
-import js.JQuery;
+import js.JQuery.JQueryHelper.*;
 import pushstate.PushState;
+import js.Browser.document in doc;
 
 class Test 
 {
 	static var stateChangeCount = 0;
-
-	#if (haxe_211 || haxe3)
-		static var doc = js.Browser.document;
-	#else 
-		static var doc = js.Lib.document;
-	#end
 
 	public static function main()
 	{
@@ -37,23 +32,41 @@ class Test
 			stateChangeCount++;
 			if (stateChangeCount > 1)
 			{
-				new JQuery("#load-type").text("This content was a push-state");
+				#if detox 
+					"#load-type".find().setText("This content was a push-state");
+				#else 
+					J("#load-type").text("This content was a push-state");
+				#end
 			}
 			
 			// Change the content.  
 			// In real life this would probably be an AJAX call
-			new JQuery("#content").text("I want to become a " + url);
+			#if detox 
+				"#content".find().setText("I want to become a " + url);
+			#else 
+				J("#content").text("I want to become a " + url);
+			#end
 
 		});
 
 		// We can also trigger changes to the history API (and therefore pushstate events) manually
-		new JQuery(untyped doc).ready(function (e) {
-			new JQuery("#animal-form").submit(function (e) {
-				// When the form is submitted, use the value of the input as our new URL, and trigger PushState
-				var value = JQuery.cur.find("input").val();
-				PushState.push("/" + value); 
-				e.preventDefault();
+		#if detox 
+			Detox.ready(function () {
+				"#animal-form".find().submit(function (e) {
+					var value = "#animal-form input".find().val();
+					PushState.push("/" + value); 
+					e.preventDefault();
+				});
 			});
-		});
+		#else 
+			J(untyped doc).ready(function (e) {
+				J("#animal-form").submit(function (e) {
+					// When the form is submitted, use the value of the input as our new URL, and trigger PushState
+					var value = JTHIS.find("input").val();
+					PushState.push("/" + value); 
+					e.preventDefault();
+				});
+			});
+		#end
 	}
 }
