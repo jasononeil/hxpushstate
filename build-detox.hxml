@@ -1,5 +1,6 @@
 -cp src/
--main demo.Test
+-cp demo/
+-main Test
 -lib detox
 -D embed_js
 -js build/test.js
