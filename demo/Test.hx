@@ -9,8 +9,6 @@
 * 
 ****/
 
-package demo;
-
 #if detox 
 	using Detox;
 #else 
