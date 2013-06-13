@@ -4,8 +4,9 @@
   "tags": ["js","pushstate","history"],
   "description": "A basic JS library for using PushState to update the browser address bar without doing a full page reload.  Depends on either Detox (if you have `-lib detox`), or js.jQuery otherwise.",
   "contributors": ["jason"],
-  "releasenote": "Haxe 3 release candidate.",
-  "version": "1.0.0-RC.1",
+  "releasenote": "Fixed packaging issues",
+  "version": "1.0.0-rc.2",
+  "classPath": "src/",
   "url": "https://github.com/jasononeil/hxpushstate",
   "dependencies": {
 
