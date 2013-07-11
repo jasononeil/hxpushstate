@@ -63,6 +63,7 @@
 		</meta>
 	</class>
 	<abstract path="Class" params="T" file="/usr/lib/haxe/std/Class.hx">
+		<this><d/></this>
 		<haxe_doc>An abstract type that represents a Class.
 	
 	See `Type` for the Haxe Reflection API.</haxe_doc>
@@ -173,6 +174,7 @@
 		<meta><m n=":coreApi"/></meta>
 	</class>
 	<abstract path="Enum" params="T" file="/usr/lib/haxe/std/Enum.hx">
+		<this><d/></this>
 		<haxe_doc>An abstract type that represents an Enum type.
 	
 	The corresponding enum instance type is `EnumValue`.
@@ -184,6 +186,7 @@
 		</meta>
 	</abstract>
 	<abstract path="EnumValue" params="" file="/usr/lib/haxe/std/EnumValue.hx">
+		<this><d/></this>
 		<haxe_doc>An abstract type that represents any enum value.
 	See `Type` for the Haxe Reflection API.</haxe_doc>
 		<meta><m n=":coreType"/></meta>
@@ -360,10 +363,12 @@
 		</meta>
 	</class>
 	<abstract path="Void" params="" file="/usr/lib/haxe/std/StdTypes.hx" module="StdTypes">
+		<this><d/></this>
 		<haxe_doc>The standard Void type. Only `null` values can be of the type `Void`.</haxe_doc>
 		<meta><m n=":coreType"/></meta>
 	</abstract>
 	<abstract path="Float" params="" file="/usr/lib/haxe/std/StdTypes.hx" module="StdTypes">
+		<this><d/></this>
 		<haxe_doc><![CDATA[The standard Float type, this is a double-precision IEEE 64bit float.
 	
 	On static targets, null cannot be assigned to Float. If this is necessary,
@@ -375,7 +380,8 @@
 		</meta>
 	</abstract>
 	<abstract path="Int" params="" file="/usr/lib/haxe/std/StdTypes.hx" module="StdTypes">
-		<to><x path="Float"/></to>
+		<this><d/></this>
+		<to><icast><x path="Float"/></icast></to>
 		<haxe_doc><![CDATA[The standard Int type. Its precision depends on the platform.
 	
 	On static targets, null cannot be assigned to Int. If this is necessary,
@@ -394,6 +400,7 @@
 	can't.</haxe_doc>
 	</typedef>
 	<abstract path="Bool" params="" file="/usr/lib/haxe/std/StdTypes.hx" module="StdTypes">
+		<this><d/></this>
 		<haxe_doc><![CDATA[The standard Boolean type, which can either be true or false.
 	
 	On static targets, null cannot be assigned to Bool. If this is necessary,
@@ -405,6 +412,7 @@
 		</meta>
 	</abstract>
 	<abstract path="Dynamic" params="T" file="/usr/lib/haxe/std/StdTypes.hx" module="StdTypes">
+		<this><d/></this>
 		<haxe_doc>Dynamic is a special type which is compatible with all other types.
 	
 	Use of Dynamic should be minimized as it prevents several compiler
@@ -14663,12 +14671,13 @@ Documentation for this class was provided by <a href="https://developer.mozilla.
 	<class path="pushstate.PushState" params="" file="src/pushstate/PushState.hx">
 		<inst static="1"><c path="pushstate.PushState"/></inst>
 		<basePath static="1"><c path="String"/></basePath>
+		<preventers static="1"><c path="Array"><f a=""><x path="Bool"/></f></c></preventers>
 		<listeners static="1"><c path="Array"><f a="">
 	<c path="String"/>
 	<x path="Void"/>
 </f></c></listeners>
 		<history static="1"><c path="js.html.History"/></history>
-		<init public="1" set="method" line="61" static="1">
+		<init public="1" set="method" line="64" static="1">
 			<f a="?basePath">
 				<c path="String"/>
 				<x path="Void"/>
@@ -14682,44 +14691,71 @@ Documentation for this class was provided by <a href="https://developer.mozilla.
 	*  - listens to "onpopstate" event, so we can detect browser "Back" clicks etc.
 	* In general you should call this before using any other part of the API.</haxe_doc>
 		</init>
-		<handleOnPopState set="method" line="105" static="1"><f a="e">
-	<d/>
+		<handleOnPopState set="method" line="108" static="1"><f a="e">
+	<c path="js.html.Event"/>
 	<x path="Void"/>
 </f></handleOnPopState>
-		<stripURL set="method" line="116" static="1"><f a="path">
+		<stripURL set="method" line="129" static="1"><f a="path">
 	<c path="String"/>
 	<c path="String"/>
 </f></stripURL>
-		<addEventListener public="1" set="method" line="124" static="1"><f a="f">
-	<f a="">
-		<c path="String"/>
-		<x path="Void"/>
-	</f>
-	<x path="Void"/>
-</f></addEventListener>
-		<removeEventListener public="1" set="method" line="128" static="1"><f a="f">
-	<f a="">
-		<c path="String"/>
-		<x path="Void"/>
-	</f>
-	<x path="Void"/>
-</f></removeEventListener>
-		<clearEventListeners public="1" set="method" line="132" static="1"><f a=""><x path="Void"/></f></clearEventListeners>
-		<dispatch set="method" line="138" static="1"><f a="url">
+		<addEventListener public="1" set="method" line="138" static="1">
+			<f a="f">
+				<f a="">
+					<c path="String"/>
+					<x path="Void"/>
+				</f>
+				<x path="Void"/>
+			</f>
+			<haxe_doc><![CDATA[Add event listener - a simple f:String->Void]]></haxe_doc>
+		</addEventListener>
+		<removeEventListener public="1" set="method" line="143" static="1">
+			<f a="f">
+				<f a="">
+					<c path="String"/>
+					<x path="Void"/>
+				</f>
+				<x path="Void"/>
+			</f>
+			<haxe_doc>Remove a specific event listener</haxe_doc>
+		</removeEventListener>
+		<clearEventListeners public="1" set="method" line="148" static="1">
+			<f a=""><x path="Void"/></f>
+			<haxe_doc>Remove all event listeners</haxe_doc>
+		</clearEventListeners>
+		<addPreventer public="1" set="method" line="155" static="1">
+			<f a="f">
+				<f a=""><x path="Bool"/></f>
+				<x path="Void"/>
+			</f>
+			<haxe_doc>Add a preventer - a simple function that, if it returns false, will prevent the page history from being changed and any listeners from being fired</haxe_doc>
+		</addPreventer>
+		<removePreventer public="1" set="method" line="160" static="1">
+			<f a="f">
+				<f a=""><x path="Bool"/></f>
+				<x path="Void"/>
+			</f>
+			<haxe_doc>Remove a specific preventer</haxe_doc>
+		</removePreventer>
+		<clearPreventers public="1" set="method" line="165" static="1">
+			<f a=""><x path="Void"/></f>
+			<haxe_doc>Remove all preventers</haxe_doc>
+		</clearPreventers>
+		<dispatch set="method" line="171" static="1"><f a="url">
 	<c path="String"/>
 	<x path="Void"/>
 </f></dispatch>
-		<push public="1" set="method" line="150" static="1">
+		<push public="1" set="method" line="183" static="1">
 			<f a="url">
 				<c path="String"/>
-				<x path="Void"/>
+				<x path="Bool"/>
 			</f>
 			<haxe_doc>* push()
 	* Use this to manually change the URL of the page without reloading.
 	* An onStateChange event is dispatched, which you can use to load 
 	* the appropriate content.</haxe_doc>
 		</push>
-		<replace public="1" set="method" line="168" static="1">
+		<replace public="1" set="method" line="205" static="1">
 			<f a="url">
 				<c path="String"/>
 				<x path="Void"/>
@@ -14736,7 +14772,7 @@ Documentation for this class was provided by <a href="https://developer.mozilla.
 	*    it would go to "/kittens", because a new History item
 	*    was not created.</haxe_doc>
 		</replace>
-		<new set="method" line="47"><f a=""><x path="Void"/></f></new>
+		<new set="method" line="50"><f a=""><x path="Void"/></f></new>
 		<haxe_doc>* PushState
 * This class is used to access, trigger and listen to the HTML5 History API.
 * This allows you to trigger changes to the pages content using Javascript,

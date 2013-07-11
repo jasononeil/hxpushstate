@@ -14,6 +14,7 @@ package pushstate;
 #if detox
 	using Detox;
 #else 
+	import haxe.ds.Option;
 	import js.JQuery;
 	import js.JQuery.JQueryHelper.*;
 #end
@@ -21,6 +22,7 @@ package pushstate;
 import js.Browser.window in win;
 import js.Browser.document in doc;
 import js.html.PopStateEvent;
+import js.html.Event;
 import pushstate.History;
 
 /**
@@ -40,6 +42,7 @@ class PushState
 {
 	static var inst:PushState;
 	static var basePath:String;
+	static var preventers:Array<Void->Bool>;
 	static var listeners:Array<String->Void>;
 
 	static var history:js.html.History;
@@ -102,7 +105,16 @@ class PushState
 		#end
 	}
 
-	static function handleOnPopState(e:Dynamic) {
+	static function handleOnPopState(e:Event) {
+		// Check that no preventers are blocking us
+		for (p in preventers) {
+			if (p()) {
+				if (e!=null)
+					e.preventDefault();
+				return;
+			}
+		}
+
 		// Read the path from the document location
 		var path:String = doc.location.pathname;
 		
@@ -111,6 +123,7 @@ class PushState
 		
 		// Pass back and launch event
 		dispatch(path);
+		return;
 	}
 
 	static function stripURL(path:String) {
@@ -121,17 +134,37 @@ class PushState
 		return path;
 	}
 
+	/** Add event listener - a simple f:String->Void */
 	public static function addEventListener(f:String->Void) {
 		listeners.push(f);
 	}
 
+	/** Remove a specific event listener */
 	public static function removeEventListener(f:String->Void) {
 		listeners.remove(f);
 	}
 
+	/** Remove all event listeners */
 	public static function clearEventListeners() {
 		while (listeners.length > 0) {
 			listeners.pop();
+		}
+	}
+
+	/** Add a preventer - a simple function that, if it returns false, will prevent the page history from being changed and any listeners from being fired */
+	public static function addPreventer(f:Void->Bool) {
+		preventers.push(f);
+	}
+
+	/** Remove a specific preventer */
+	public static function removePreventer(f:Void->Bool) {
+		preventers.remove(f);
+	}
+
+	/** Remove all preventers */
+	public static function clearPreventers() {
+		while (preventers.length > 0) {
+			preventers.pop();
 		}
 	}
 
@@ -147,9 +180,13 @@ class PushState
 	* An onStateChange event is dispatched, which you can use to load 
 	* the appropriate content.
 	*/
-	public static function push(url:String) {
+	public static function push(url:String):Bool {
+		for (p in preventers) {
+			if (p()) return false;
+		}
 		history.pushState({}, "", url);
 		dispatch(url);
+		return true;
 	}
 
 	/**
