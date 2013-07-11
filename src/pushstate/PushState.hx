@@ -166,7 +166,7 @@ class PushState
 	*    was not created.
 	*/
 	public static function replace(url:String) {
-		history.pushState({}, "", url);
+		history.replaceState({}, "", url);
 		dispatch(url);
 	}
 }
