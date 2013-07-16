@@ -26,44 +26,43 @@ import js.html.Event;
 import pushstate.History;
 
 /**
-* PushState
-* This class is used to access, trigger and listen to the HTML5 History API.
-* This allows you to trigger changes to the pages content using Javascript,
-* and update the URL of the page so that browser features such as bookmarking,
-* clicking "back" or "forward", and sharing links still work.
-* 
-* This library is accessed using static methods, and accesses only part
-* of the History API for simplicity.  Full support may be added later.
-* 
-* This library does not fix any cross-browser issues or provide a #hash fallback
-* for older browsers.  I've tried to keep it lightweight and simple.
-*/
+	PushState
+
+	This class is used to access, trigger and listen to the HTML5 History API.
+	This allows you to trigger changes to the pages content using Javascript,
+	and update the URL of the page so that browser features such as bookmarking,
+	clicking "back" or "forward", and sharing links still work.
+	
+	This library is accessed using static methods, and accesses only part
+	of the History API for simplicity.  Full support may be added later.
+	
+	This library does not fix any cross-browser issues or provide a #hash fallback
+	for older browsers.  I've tried to keep it lightweight and simple.
+**/
 class PushState 
 {
-	static var inst:PushState;
 	static var basePath:String;
-	static var preventers:Array<Void->Bool>;
-	static var listeners:Array<String->Void>;
-
+	static var preventers:Array<Preventer>;
+	static var listeners:Array<Listener>;
 	static var history:js.html.History;
-	
-	function new() {
-		listeners = [];
-	}
 
 	/** 
-	* init()
-	* This initialises the PushState API for the current page.
-	* Basically it:
-	*  - sets up the PushState object
-	*  - gets links with rel="pushstate" to use the PushState API
-	*  - launches an initial onStateChange event so you can load your first page
-	*  - listens to "onpopstate" event, so we can detect browser "Back" clicks etc.
-	* In general you should call this before using any other part of the API.
-	*/
-	public static function init(?basePath = "/") {
-		// Set up the instance
-		inst = new PushState();
+		Initialize the PushState API for the current page.
+		
+		Basically it:
+
+		 - initialize the internal state
+		 - gets links with rel="pushstate" to use the PushState API
+		 - launches an initial onStateChange event so you can load your first page
+		 - listens to "onpopstate" event, so we can detect browser "Back" clicks etc.
+		
+		It will use either Detox or jQuery to run these at startup. (Detox if you're using it already, jQuery otherwise)
+
+		In general you should call this before using any other part of the API.
+	**/
+	public static function init(?basePath = "/"):Void {
+		listeners = [];
+		preventers = [];
 		history = win.history;
 		PushState.basePath = basePath;
 
@@ -105,24 +104,26 @@ class PushState
 		#end
 	}
 
-	static function handleOnPopState(e:Event) {
+	static function handleOnPopState(e:PopStateEvent) {
+		// Read the path from the document location
+		var path:String = doc.location.pathname;
+		var state = (e!=null) ? e.state : null;
+
 		// Check that no preventers are blocking us
 		for (p in preventers) {
-			if (p()) {
+			if ( p(path, e.state) ) {
 				if (e!=null)
 					e.preventDefault();
 				return;
 			}
 		}
-
-		// Read the path from the document location
-		var path:String = doc.location.pathname;
 		
 		// Get the relevant part of the URL
 		path = stripURL(path);
 		
-		// Pass back and launch event
-		dispatch(path);
+		// Dispatch to all our listeners
+		dispatch(path, state);
+
 		return;
 	}
 
@@ -134,76 +135,139 @@ class PushState
 		return path;
 	}
 
-	/** Add event listener - a simple f:String->Void */
-	public static function addEventListener(f:String->Void) {
-		listeners.push(f);
+	/**
+		Add event listener
+
+		Event listeners take the form `function (url:String, state:{}):Void`
+
+		Alternatively a simple form `function (url:String):Void` can be used.
+
+		This will return the Listener that you added, which is handy for removing it later.
+	**/
+	public static function addEventListener(?l:Listener, ?s:SimpleListener):Listener {
+		if ( l!=null ) {
+			listeners.push( l );
+		}
+		else if ( s!=null ) {
+			l = function( url, _ ) return s( url );
+			listeners.push( l );
+		}
+		return l;
 	}
 
-	/** Remove a specific event listener */
-	public static function removeEventListener(f:String->Void) {
-		listeners.remove(f);
+	/** 
+		Remove a specific event listener 
+	**/
+	public static function removeEventListener(l:Listener):Void {
+		listeners.remove(l);
 	}
 
-	/** Remove all event listeners */
-	public static function clearEventListeners() {
+	/** 
+		Remove all event listeners 
+	**/
+	public static function clearEventListeners():Void {
 		while (listeners.length > 0) {
 			listeners.pop();
 		}
 	}
 
-	/** Add a preventer - a simple function that, if it returns false, will prevent the page history from being changed and any listeners from being fired */
-	public static function addPreventer(f:Void->Bool) {
-		preventers.push(f);
+	/** 
+		Add a preventer
+
+		A preventer is a simple function that takes the form `function (url:String, state:{}):Bool`
+
+		If it returns false, will prevent the page history from being changed and any listeners from being fired.
+
+		Alternatively, a simpler `function (url:String):Bool` syntax may be used.
+
+		If you wish merely to defer the change in state, you can keep the url and state data and use it again with:
+		  `Pushstate.push( url, state );`
+		at a later time.
+
+		This returns the preventer added, so you can remove it later.
+	**/
+	public static function addPreventer(p:Preventer, s:SimplePreventer):Preventer {
+		if (p!=null) {
+			preventers.push( p );
+		}
+		else if (s!=null) {
+			p = function( url, _ ) return s( url );
+			listeners.push( p );
+		}
+		return p;
 	}
 
 	/** Remove a specific preventer */
-	public static function removePreventer(f:Void->Bool) {
-		preventers.remove(f);
+	public static function removePreventer(p:Preventer):Void {
+		preventers.remove(p);
 	}
 
 	/** Remove all preventers */
-	public static function clearPreventers() {
+	public static function clearPreventers():Void {
 		while (preventers.length > 0) {
 			preventers.pop();
 		}
 	}
 
-	static function dispatch(url:String) {
+	static function dispatch(url:String, state:Null<{}>) {
 		for (l in listeners) {
-			l(url);
+			l(url, state);
 		}
 	}
 
 	/**
-	* push()
-	* Use this to manually change the URL of the page without reloading.
-	* An onStateChange event is dispatched, which you can use to load 
-	* the appropriate content.
-	*/
-	public static function push(url:String):Bool {
+		Use this to manually change the URL of the page without reloading.
+		
+		If any preventer functions you have added return false, nothing will happen.
+
+		Otherwise, each of your listeners will be executed and the page history / url will be updated.
+
+		Will return true if the push was successful (not prevented), or false if it was prevented.
+		
+		**URL**
+
+		The new history entry's URL is given by this parameter. Note that the browser won't attempt to load this URL after a call to pushState(), but it might attempt to load the URL later, for instance after the user restarts her browser. The new URL does not need to be absolute; if it's relative, it's resolved relative to the current URL. The new URL must be of the same origin as the current URL; otherwise, pushState() will throw an exception. This parameter is optional; if it isn't specified, it's set to the document's current URL.
+
+		**STATE**
+
+		The state object is a JavaScript object which is associated with the new history entry created by pushState(). Whenever the user navigates to the new state, a popstate event is fired, and the state property of the event contains a copy of the history entry's state object.
+		The state object can be anything that can be serialized. Because Firefox saves state objects to the user's disk so they can be restored after the user restarts her browser, we impose a size limit of 640k characters on the serialized representation of a state object. If you pass a state object whose serialized representation is larger than this to pushState(), the method will throw an exception. If you need more space than this, you're encouraged to use sessionStorage and/or localStorage.
+	**/
+	public static function push(url:String, ?state:{}):Bool {
+		if (state==null) state = {};
 		for (p in preventers) {
-			if (p()) return false;
+			if (p(url,state)) return false;
 		}
-		history.pushState({}, "", url);
-		dispatch(url);
+		history.pushState(state, "", url);
+		dispatch(url,state);
 		return true;
 	}
 
 	/**
-	* replace()
-	* This changes the URL of the page without creating a new History item.
-	* So for instance
-	*  - You are on the page "/kittents"
-	*  - You use PushState.push("/puppies")
-	*  - You are now on "/puppies", if you were to press back you 
-	*    would be on "kittens"
-	*  - You now use PushState.replace("/aliens")
-	*  - The URL is not "/aliens", but if you were to press back
-	*    it would go to "/kittens", because a new History item
-	*    was not created.
-	*/
-	public static function replace(url:String) {
-		history.replaceState({}, "", url);
-		dispatch(url);
+		Identical to `push()` except this changes the URL of the page without creating a new History item.
+
+		So for instance:
+		-
+		 - You are on the page "/kittents"
+		 - You use PushState.push("/puppies")
+		 - You are now on "/puppies", if you were to press back you would be on "kittens"
+		 - You now use PushState.replace("/aliens")
+		 - The URL is not "/aliens", but if you were to press back it would go to "/kittens" (NOT "/puppies"), because a new History item was not created.
+
+		Will return true if the request was successful (not prevented) or false if it was prevented.
+	**/
+	public static function replace(url:String, ?state:{}):Bool {
+		if (state==null) state = {};
+		for (p in preventers) {
+			if (p(url,state)) return false;
+		}
+		history.replaceState(state, "", url);
+		dispatch(url,state);
+		return true;
 	}
 }
+
+typedef Listener = String->Dynamic->Void;
+typedef Preventer = String->Dynamic->Bool;
+typedef SimpleListener = String->Void;
+typedef SimplePreventer = String->Bool;

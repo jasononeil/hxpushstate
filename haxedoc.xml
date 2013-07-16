@@ -14669,120 +14669,167 @@ Documentation for this class was provided by <a href="https://developer.mozilla.
 		<meta><m n=":native"><e>"History"</e></m></meta>
 	</class>
 	<class path="pushstate.PushState" params="" file="src/pushstate/PushState.hx">
-		<inst static="1"><c path="pushstate.PushState"/></inst>
 		<basePath static="1"><c path="String"/></basePath>
-		<preventers static="1"><c path="Array"><f a=""><x path="Bool"/></f></c></preventers>
-		<listeners static="1"><c path="Array"><f a="">
-	<c path="String"/>
-	<x path="Void"/>
-</f></c></listeners>
+		<preventers static="1"><c path="Array"><t path="pushstate.Preventer"/></c></preventers>
+		<listeners static="1"><c path="Array"><t path="pushstate.Listener"/></c></listeners>
 		<history static="1"><c path="js.html.History"/></history>
-		<init public="1" set="method" line="64" static="1">
+		<init public="1" set="method" line="63" static="1">
 			<f a="?basePath">
 				<c path="String"/>
 				<x path="Void"/>
 			</f>
-			<haxe_doc>* init()
-	* This initialises the PushState API for the current page.
-	* Basically it:
-	*  - sets up the PushState object
-	*  - gets links with rel="pushstate" to use the PushState API
-	*  - launches an initial onStateChange event so you can load your first page
-	*  - listens to "onpopstate" event, so we can detect browser "Back" clicks etc.
-	* In general you should call this before using any other part of the API.</haxe_doc>
+			<haxe_doc>Initialize the PushState API for the current page.
+		
+		Basically it:
+
+		 - initialize the internal state
+		 - gets links with rel="pushstate" to use the PushState API
+		 - launches an initial onStateChange event so you can load your first page
+		 - listens to "onpopstate" event, so we can detect browser "Back" clicks etc.
+		
+		It will use either Detox or jQuery to run these at startup. (Detox if you're using it already, jQuery otherwise)
+
+		In general you should call this before using any other part of the API.</haxe_doc>
 		</init>
-		<handleOnPopState set="method" line="108" static="1"><f a="e">
-	<c path="js.html.Event"/>
+		<handleOnPopState set="method" line="107" static="1"><f a="e">
+	<c path="js.html.PopStateEvent"/>
 	<x path="Void"/>
 </f></handleOnPopState>
-		<stripURL set="method" line="129" static="1"><f a="path">
+		<stripURL set="method" line="130" static="1"><f a="path">
 	<c path="String"/>
 	<c path="String"/>
 </f></stripURL>
-		<addEventListener public="1" set="method" line="138" static="1">
-			<f a="f">
-				<f a="">
-					<c path="String"/>
-					<x path="Void"/>
-				</f>
-				<x path="Void"/>
+		<addEventListener public="1" set="method" line="147" static="1">
+			<f a="?l:?s">
+				<t path="pushstate.Listener"/>
+				<t path="pushstate.SimpleListener"/>
+				<t path="pushstate.Listener"/>
 			</f>
-			<haxe_doc><![CDATA[Add event listener - a simple f:String->Void]]></haxe_doc>
+			<haxe_doc>Add event listener
+
+		Event listeners take the form `function (url:String, state:{}):Void`
+
+		Alternatively a simple form `function (url:String):Void` can be used.
+
+		This will return the Listener that you added, which is handy for removing it later.</haxe_doc>
 		</addEventListener>
-		<removeEventListener public="1" set="method" line="143" static="1">
-			<f a="f">
-				<f a="">
-					<c path="String"/>
-					<x path="Void"/>
-				</f>
+		<removeEventListener public="1" set="method" line="161" static="1">
+			<f a="l">
+				<t path="pushstate.Listener"/>
 				<x path="Void"/>
 			</f>
 			<haxe_doc>Remove a specific event listener</haxe_doc>
 		</removeEventListener>
-		<clearEventListeners public="1" set="method" line="148" static="1">
+		<clearEventListeners public="1" set="method" line="168" static="1">
 			<f a=""><x path="Void"/></f>
 			<haxe_doc>Remove all event listeners</haxe_doc>
 		</clearEventListeners>
-		<addPreventer public="1" set="method" line="155" static="1">
-			<f a="f">
-				<f a=""><x path="Bool"/></f>
-				<x path="Void"/>
+		<addPreventer public="1" set="method" line="189" static="1">
+			<f a="p:s">
+				<t path="pushstate.Preventer"/>
+				<t path="pushstate.SimplePreventer"/>
+				<t path="pushstate.Preventer"/>
 			</f>
-			<haxe_doc>Add a preventer - a simple function that, if it returns false, will prevent the page history from being changed and any listeners from being fired</haxe_doc>
+			<haxe_doc>Add a preventer
+
+		A preventer is a simple function that takes the form `function (url:String, state:{}):Bool`
+
+		If it returns false, will prevent the page history from being changed and any listeners from being fired.
+
+		Alternatively, a simpler `function (url:String):Bool` syntax may be used.
+
+		If you wish merely to defer the change in state, you can keep the url and state data and use it again with:
+		  `Pushstate.push( url, state );`
+		at a later time.
+
+		This returns the preventer added, so you can remove it later.</haxe_doc>
 		</addPreventer>
-		<removePreventer public="1" set="method" line="160" static="1">
-			<f a="f">
-				<f a=""><x path="Bool"/></f>
+		<removePreventer public="1" set="method" line="201" static="1">
+			<f a="p">
+				<t path="pushstate.Preventer"/>
 				<x path="Void"/>
 			</f>
 			<haxe_doc>Remove a specific preventer</haxe_doc>
 		</removePreventer>
-		<clearPreventers public="1" set="method" line="165" static="1">
+		<clearPreventers public="1" set="method" line="206" static="1">
 			<f a=""><x path="Void"/></f>
 			<haxe_doc>Remove all preventers</haxe_doc>
 		</clearPreventers>
-		<dispatch set="method" line="171" static="1"><f a="url">
+		<dispatch set="method" line="212" static="1"><f a="url:state">
 	<c path="String"/>
+	<t path="Null"><a/></t>
 	<x path="Void"/>
 </f></dispatch>
-		<push public="1" set="method" line="183" static="1">
-			<f a="url">
+		<push public="1" set="method" line="236" static="1">
+			<f a="url:?state">
 				<c path="String"/>
+				<a/>
 				<x path="Bool"/>
 			</f>
-			<haxe_doc>* push()
-	* Use this to manually change the URL of the page without reloading.
-	* An onStateChange event is dispatched, which you can use to load 
-	* the appropriate content.</haxe_doc>
+			<haxe_doc>Use this to manually change the URL of the page without reloading.
+		
+		If any preventer functions you have added return false, nothing will happen.
+
+		Otherwise, each of your listeners will be executed and the page history / url will be updated.
+
+		Will return true if the push was successful (not prevented), or false if it was prevented.
+		
+		**URL**
+
+		The new history entry's URL is given by this parameter. Note that the browser won't attempt to load this URL after a call to pushState(), but it might attempt to load the URL later, for instance after the user restarts her browser. The new URL does not need to be absolute; if it's relative, it's resolved relative to the current URL. The new URL must be of the same origin as the current URL; otherwise, pushState() will throw an exception. This parameter is optional; if it isn't specified, it's set to the document's current URL.
+
+		**STATE**
+
+		The state object is a JavaScript object which is associated with the new history entry created by pushState(). Whenever the user navigates to the new state, a popstate event is fired, and the state property of the event contains a copy of the history entry's state object.
+		The state object can be anything that can be serialized. Because Firefox saves state objects to the user's disk so they can be restored after the user restarts her browser, we impose a size limit of 640k characters on the serialized representation of a state object. If you pass a state object whose serialized representation is larger than this to pushState(), the method will throw an exception. If you need more space than this, you're encouraged to use sessionStorage and/or localStorage.</haxe_doc>
 		</push>
-		<replace public="1" set="method" line="205" static="1">
-			<f a="url">
+		<replace public="1" set="method" line="259" static="1">
+			<f a="url:?state">
 				<c path="String"/>
-				<x path="Void"/>
+				<a/>
+				<x path="Bool"/>
 			</f>
-			<haxe_doc>* replace()
-	* This changes the URL of the page without creating a new History item.
-	* So for instance
-	*  - You are on the page "/kittents"
-	*  - You use PushState.push("/puppies")
-	*  - You are now on "/puppies", if you were to press back you 
-	*    would be on "kittens"
-	*  - You now use PushState.replace("/aliens")
-	*  - The URL is not "/aliens", but if you were to press back
-	*    it would go to "/kittens", because a new History item
-	*    was not created.</haxe_doc>
+			<haxe_doc>Identical to `push()` except this changes the URL of the page without creating a new History item.
+
+		So for instance:
+		-
+		 - You are on the page "/kittents"
+		 - You use PushState.push("/puppies")
+		 - You are now on "/puppies", if you were to press back you would be on "kittens"
+		 - You now use PushState.replace("/aliens")
+		 - The URL is not "/aliens", but if you were to press back it would go to "/kittens" (NOT "/puppies"), because a new History item was not created.
+
+		Will return true if the request was successful (not prevented) or false if it was prevented.</haxe_doc>
 		</replace>
-		<new set="method" line="50"><f a=""><x path="Void"/></f></new>
-		<haxe_doc>* PushState
-* This class is used to access, trigger and listen to the HTML5 History API.
-* This allows you to trigger changes to the pages content using Javascript,
-* and update the URL of the page so that browser features such as bookmarking,
-* clicking "back" or "forward", and sharing links still work.
-* 
-* This library is accessed using static methods, and accesses only part
-* of the History API for simplicity.  Full support may be added later.
-* 
-* This library does not fix any cross-browser issues or provide a #hash fallback
-* for older browsers.  I've tried to keep it lightweight and simple.</haxe_doc>
+		<haxe_doc>PushState
+
+	This class is used to access, trigger and listen to the HTML5 History API.
+	This allows you to trigger changes to the pages content using Javascript,
+	and update the URL of the page so that browser features such as bookmarking,
+	clicking "back" or "forward", and sharing links still work.
+	
+	This library is accessed using static methods, and accesses only part
+	of the History API for simplicity.  Full support may be added later.
+	
+	This library does not fix any cross-browser issues or provide a #hash fallback
+	for older browsers.  I've tried to keep it lightweight and simple.</haxe_doc>
 	</class>
+	<typedef path="pushstate.Listener" params="" file="src/pushstate/PushState.hx" module="pushstate.PushState"><f a=":">
+	<c path="String"/>
+	<d/>
+	<x path="Void"/>
+</f></typedef>
+	<typedef path="pushstate.Preventer" params="" file="src/pushstate/PushState.hx" module="pushstate.PushState"><f a=":">
+	<c path="String"/>
+	<d/>
+	<x path="Bool"/>
+</f></typedef>
+	<typedef path="pushstate.SimpleListener" params="" file="src/pushstate/PushState.hx" module="pushstate.PushState"><f a="">
+	<c path="String"/>
+	<x path="Void"/>
+</f></typedef>
+	<typedef path="pushstate.SimplePreventer" params="" file="src/pushstate/PushState.hx" module="pushstate.PushState"><f a="">
+	<c path="String"/>
+	<x path="Bool"/>
+</f></typedef>
 </haxe>
