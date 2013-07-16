@@ -51,6 +51,8 @@ class Test
 
 		});
 
+		var preventer = function(url) return js.Browser.window.confirm('Switch to $url?');
+
 		// We can also trigger changes to the history API (and therefore pushstate events) manually
 		#if detox 
 			Detox.ready(function () {
@@ -59,6 +61,7 @@ class Test
 					PushState.push("/" + value); 
 					e.preventDefault();
 				});
+				togglePreventer( "#toggle-preventer".find(), preventer );
 			});
 		#else 
 			J(untyped doc).ready(function (e) {
@@ -68,7 +71,21 @@ class Test
 					PushState.push("/" + value); 
 					e.preventDefault();
 				});
+				togglePreventer( J("#toggle-preventer"), preventer );
 			});
 		#end
+	}
+
+	static function togglePreventer(btn #if detox :dtx.DOMCollection #end, preventer:String->Bool) {
+		btn.click(function (e) {
+			if (btn.hasClass("active")) {
+				btn.removeClass("active");
+				PushState.clearPreventers();
+			}
+			else {
+				btn.addClass("active");
+				PushState.addPreventer(preventer);
+			}
+		});
 	}
 }

@@ -418,6 +418,7 @@
 	Use of Dynamic should be minimized as it prevents several compiler
 	checks and optimizations.</haxe_doc>
 		<meta>
+			<m n=":valueUsed"/>
 			<m n=":coreType"/>
 			<m n=":runtimeValue"/>
 		</meta>
@@ -460,6 +461,34 @@
 			<f a=""><x path="Void"/></f>
 			<meta><m n=":keep"/></meta>
 		</main>
+		<togglePreventer set="method" line="79" static="1"><f a="btn:preventer">
+	<a>
+		<removeClass set="null"><f a="">
+	<c path="String"/>
+	<c path="js.JQuery"/>
+</f></removeClass>
+		<hasClass set="null"><f a="">
+	<c path="String"/>
+	<x path="Bool"/>
+</f></hasClass>
+		<click set="null"><f a="">
+	<f a="e">
+		<t path="js.JqEvent"/>
+		<x path="Void"/>
+	</f>
+	<c path="js.JQuery"/>
+</f></click>
+		<addClass set="null"><f a="">
+	<c path="String"/>
+	<c path="js.JQuery"/>
+</f></addClass>
+	</a>
+	<f a="">
+		<c path="String"/>
+		<x path="Bool"/>
+	</f>
+	<x path="Void"/>
+</f></togglePreventer>
 	</class>
 	<class path="haxe.EnumTools" params="" file="/usr/lib/haxe/std/haxe/EnumTools.hx" extern="1">
 		<getName public="1" params="T" get="inline" set="null" line="41" static="1">
@@ -14673,7 +14702,9 @@ Documentation for this class was provided by <a href="https://developer.mozilla.
 		<preventers static="1"><c path="Array"><t path="pushstate.Preventer"/></c></preventers>
 		<listeners static="1"><c path="Array"><t path="pushstate.Listener"/></c></listeners>
 		<history static="1"><c path="js.html.History"/></history>
-		<init public="1" set="method" line="63" static="1">
+		<currentPath public="1" static="1"><c path="String"/></currentPath>
+		<currentState public="1" static="1"><d/></currentState>
+		<init public="1" set="method" line="66" static="1">
 			<f a="?basePath">
 				<c path="String"/>
 				<x path="Void"/>
@@ -14691,15 +14722,15 @@ Documentation for this class was provided by <a href="https://developer.mozilla.
 
 		In general you should call this before using any other part of the API.</haxe_doc>
 		</init>
-		<handleOnPopState set="method" line="107" static="1"><f a="e">
+		<handleOnPopState set="method" line="110" static="1"><f a="e">
 	<c path="js.html.PopStateEvent"/>
 	<x path="Void"/>
 </f></handleOnPopState>
-		<stripURL set="method" line="130" static="1"><f a="path">
+		<stripURL set="method" line="133" static="1"><f a="path">
 	<c path="String"/>
 	<c path="String"/>
 </f></stripURL>
-		<addEventListener public="1" set="method" line="147" static="1">
+		<addEventListener public="1" set="method" line="150" static="1">
 			<f a="?l:?s">
 				<t path="pushstate.Listener"/>
 				<t path="pushstate.SimpleListener"/>
@@ -14707,32 +14738,32 @@ Documentation for this class was provided by <a href="https://developer.mozilla.
 			</f>
 			<haxe_doc>Add event listener
 
-		Event listeners take the form `function (url:String, state:{}):Void`
+		Event listeners take the form `function (url:String, state:Dynamic):Void`
 
 		Alternatively a simple form `function (url:String):Void` can be used.
 
 		This will return the Listener that you added, which is handy for removing it later.</haxe_doc>
 		</addEventListener>
-		<removeEventListener public="1" set="method" line="161" static="1">
+		<removeEventListener public="1" set="method" line="164" static="1">
 			<f a="l">
 				<t path="pushstate.Listener"/>
 				<x path="Void"/>
 			</f>
 			<haxe_doc>Remove a specific event listener</haxe_doc>
 		</removeEventListener>
-		<clearEventListeners public="1" set="method" line="168" static="1">
+		<clearEventListeners public="1" set="method" line="171" static="1">
 			<f a=""><x path="Void"/></f>
 			<haxe_doc>Remove all event listeners</haxe_doc>
 		</clearEventListeners>
-		<addPreventer public="1" set="method" line="189" static="1">
-			<f a="p:s">
+		<addPreventer public="1" set="method" line="196" static="1">
+			<f a="?p:?s">
 				<t path="pushstate.Preventer"/>
 				<t path="pushstate.SimplePreventer"/>
 				<t path="pushstate.Preventer"/>
 			</f>
 			<haxe_doc>Add a preventer
 
-		A preventer is a simple function that takes the form `function (url:String, state:{}):Bool`
+		A preventer is a simple function that takes the form `function (url:String, state:Dynamic):Bool`
 
 		If it returns false, will prevent the page history from being changed and any listeners from being fired.
 
@@ -14742,28 +14773,32 @@ Documentation for this class was provided by <a href="https://developer.mozilla.
 		  `Pushstate.push( url, state );`
 		at a later time.
 
+		**Note**: If a preventer cancels a "popstate" event from the browser (eg. they clicked 'back'), your history can get messed up.
+		We can't cancel the event properly, so we prevent the handlers from firing and we use `history.replaceState` to reset the URL.  
+		This will overwrite that URL in the history, which may not be the behaviour you want.  If you have a suggested workaround, please let me know!
+
 		This returns the preventer added, so you can remove it later.</haxe_doc>
 		</addPreventer>
-		<removePreventer public="1" set="method" line="201" static="1">
+		<removePreventer public="1" set="method" line="208" static="1">
 			<f a="p">
 				<t path="pushstate.Preventer"/>
 				<x path="Void"/>
 			</f>
 			<haxe_doc>Remove a specific preventer</haxe_doc>
 		</removePreventer>
-		<clearPreventers public="1" set="method" line="206" static="1">
+		<clearPreventers public="1" set="method" line="213" static="1">
 			<f a=""><x path="Void"/></f>
 			<haxe_doc>Remove all preventers</haxe_doc>
 		</clearPreventers>
-		<dispatch set="method" line="212" static="1"><f a="url:state">
+		<dispatch set="method" line="219" static="1"><f a="url:state">
 	<c path="String"/>
-	<t path="Null"><a/></t>
+	<t path="Null"><d/></t>
 	<x path="Void"/>
 </f></dispatch>
-		<push public="1" set="method" line="236" static="1">
+		<push public="1" set="method" line="243" static="1">
 			<f a="url:?state">
 				<c path="String"/>
-				<a/>
+				<d/>
 				<x path="Bool"/>
 			</f>
 			<haxe_doc>Use this to manually change the URL of the page without reloading.
@@ -14783,10 +14818,10 @@ Documentation for this class was provided by <a href="https://developer.mozilla.
 		The state object is a JavaScript object which is associated with the new history entry created by pushState(). Whenever the user navigates to the new state, a popstate event is fired, and the state property of the event contains a copy of the history entry's state object.
 		The state object can be anything that can be serialized. Because Firefox saves state objects to the user's disk so they can be restored after the user restarts her browser, we impose a size limit of 640k characters on the serialized representation of a state object. If you pass a state object whose serialized representation is larger than this to pushState(), the method will throw an exception. If you need more space than this, you're encouraged to use sessionStorage and/or localStorage.</haxe_doc>
 		</push>
-		<replace public="1" set="method" line="259" static="1">
+		<replace public="1" set="method" line="268" static="1">
 			<f a="url:?state">
 				<c path="String"/>
-				<a/>
+				<d/>
 				<x path="Bool"/>
 			</f>
 			<haxe_doc>Identical to `push()` except this changes the URL of the page without creating a new History item.

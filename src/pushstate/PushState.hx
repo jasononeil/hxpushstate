@@ -46,6 +46,9 @@ class PushState
 	static var listeners:Array<Listener>;
 	static var history:js.html.History;
 
+	public static var currentPath:String;
+	public static var currentState:Dynamic;
+
 	/** 
 		Initialize the PushState API for the current page.
 		
@@ -106,24 +109,24 @@ class PushState
 
 	static function handleOnPopState(e:PopStateEvent) {
 		// Read the path from the document location
-		var path:String = doc.location.pathname;
+		var path:String = stripURL(doc.location.pathname);
 		var state = (e!=null) ? e.state : null;
 
 		// Check that no preventers are blocking us
-		for (p in preventers) {
-			if ( p(path, e.state) ) {
-				if (e!=null)
-					e.preventDefault();
-				return;
+		if (e!=null) {
+			for (p in preventers) {
+				if ( !p(path, e.state) ) {
+						e.preventDefault();
+					history.replaceState( currentState, "", currentPath );
+					return;
+				}
 			}
 		}
-		
-		// Get the relevant part of the URL
-		path = stripURL(path);
-		
-		// Dispatch to all our listeners
-		dispatch(path, state);
 
+		currentPath = path;
+		currentState = state;
+
+		dispatch(path, state);
 		return;
 	}
 
@@ -138,7 +141,7 @@ class PushState
 	/**
 		Add event listener
 
-		Event listeners take the form `function (url:String, state:{}):Void`
+		Event listeners take the form `function (url:String, state:Dynamic):Void`
 
 		Alternatively a simple form `function (url:String):Void` can be used.
 
@@ -174,7 +177,7 @@ class PushState
 	/** 
 		Add a preventer
 
-		A preventer is a simple function that takes the form `function (url:String, state:{}):Bool`
+		A preventer is a simple function that takes the form `function (url:String, state:Dynamic):Bool`
 
 		If it returns false, will prevent the page history from being changed and any listeners from being fired.
 
@@ -184,15 +187,19 @@ class PushState
 		  `Pushstate.push( url, state );`
 		at a later time.
 
+		**Note**: If a preventer cancels a "popstate" event from the browser (eg. they clicked 'back'), your history can get messed up.
+		We can't cancel the event properly, so we prevent the handlers from firing and we use `history.replaceState` to reset the URL.  
+		This will overwrite that URL in the history, which may not be the behaviour you want.  If you have a suggested workaround, please let me know!
+
 		This returns the preventer added, so you can remove it later.
 	**/
-	public static function addPreventer(p:Preventer, s:SimplePreventer):Preventer {
+	public static function addPreventer(?p:Preventer, ?s:SimplePreventer):Preventer {
 		if (p!=null) {
 			preventers.push( p );
 		}
 		else if (s!=null) {
 			p = function( url, _ ) return s( url );
-			listeners.push( p );
+			preventers.push( p );
 		}
 		return p;
 	}
@@ -209,7 +216,7 @@ class PushState
 		}
 	}
 
-	static function dispatch(url:String, state:Null<{}>) {
+	static function dispatch(url:String, state:Null<Dynamic>) {
 		for (l in listeners) {
 			l(url, state);
 		}
@@ -233,12 +240,14 @@ class PushState
 		The state object is a JavaScript object which is associated with the new history entry created by pushState(). Whenever the user navigates to the new state, a popstate event is fired, and the state property of the event contains a copy of the history entry's state object.
 		The state object can be anything that can be serialized. Because Firefox saves state objects to the user's disk so they can be restored after the user restarts her browser, we impose a size limit of 640k characters on the serialized representation of a state object. If you pass a state object whose serialized representation is larger than this to pushState(), the method will throw an exception. If you need more space than this, you're encouraged to use sessionStorage and/or localStorage.
 	**/
-	public static function push(url:String, ?state:{}):Bool {
-		if (state==null) state = {};
+	public static function push(url:String, ?state:Dynamic):Bool {
+		if (state==null) state = Dynamic;
 		for (p in preventers) {
-			if (p(url,state)) return false;
+			if (!p(url,state)) return false;
 		}
 		history.pushState(state, "", url);
+		currentPath = url;
+		currentState = state;
 		dispatch(url,state);
 		return true;
 	}
@@ -256,12 +265,14 @@ class PushState
 
 		Will return true if the request was successful (not prevented) or false if it was prevented.
 	**/
-	public static function replace(url:String, ?state:{}):Bool {
-		if (state==null) state = {};
+	public static function replace(url:String, ?state:Dynamic):Bool {
+		if (state==null) state = Dynamic;
 		for (p in preventers) {
-			if (p(url,state)) return false;
+			if (!p(url,state)) return false;
 		}
 		history.replaceState(state, "", url);
+		currentPath = url;
+		currentState = state;
 		dispatch(url,state);
 		return true;
 	}
