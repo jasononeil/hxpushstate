@@ -241,7 +241,7 @@ class PushState
 		The state object can be anything that can be serialized. Because Firefox saves state objects to the user's disk so they can be restored after the user restarts her browser, we impose a size limit of 640k characters on the serialized representation of a state object. If you pass a state object whose serialized representation is larger than this to pushState(), the method will throw an exception. If you need more space than this, you're encouraged to use sessionStorage and/or localStorage.
 	**/
 	public static function push(url:String, ?state:Dynamic):Bool {
-		if (state==null) state = Dynamic;
+		if (state==null) state = {};
 		for (p in preventers) {
 			if (!p(url,state)) return false;
 		}
