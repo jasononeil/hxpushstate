@@ -63,7 +63,7 @@ class PushState
 
 		In general you should call this before using any other part of the API.
 	**/
-	public static function init(?basePath = "/"):Void {
+	public static function init(?basePath = ""):Void {
 		listeners = [];
 		preventers = [];
 		history = win.history;
