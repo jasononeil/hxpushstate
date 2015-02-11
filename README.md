@@ -71,7 +71,7 @@ This demo shows a few things:
  	* If it's not the default, we trigger a pushstate event and let the content update itself.
  	* This ensures the code will work on older browsers, or if someone arrives via a link or bookmark, etc.
 
-[Click here to view the source of the demo](https://github.com/jasononeil/hxpushstate/blob/master/src/demo/Test.hx)
+[Click here to view the source of the demo](https://github.com/jasononeil/hxpushstate/blob/master/demo/Test.hx)
 
 ### Notes
 
