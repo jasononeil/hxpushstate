@@ -1,19 +1,19 @@
 /****
 * Copyright (c) 2013 Jason O'Neil
-* 
+*
 * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-* 
+*
 * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-* 
+*
 * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-* 
+*
 ****/
 
 package pushstate;
 
 #if detox
 	using Detox;
-#else 
+#else
 	import haxe.ds.Option;
 	import js.JQuery;
 	import js.JQuery.JQueryHelper.*;
@@ -32,14 +32,14 @@ import pushstate.History;
 	This allows you to trigger changes to the pages content using Javascript,
 	and update the URL of the page so that browser features such as bookmarking,
 	clicking "back" or "forward", and sharing links still work.
-	
+
 	This library is accessed using static methods, and accesses only part
 	of the History API for simplicity.  Full support may be added later.
-	
+
 	This library does not fix any cross-browser issues or provide a #hash fallback
 	for older browsers.  I've tried to keep it lightweight and simple.
 **/
-class PushState 
+class PushState
 {
 	static var basePath:String;
 	static var preventers:Array<Preventer>;
@@ -49,31 +49,35 @@ class PushState
 	public static var currentPath:String;
 	public static var currentState:Dynamic;
 
-	/** 
+	/**
 		Initialize the PushState API for the current page.
-		
+
 		Basically it:
 
 		 - initialize the internal state
 		 - gets links with rel="pushstate" to use the PushState API
 		 - launches an initial onStateChange event so you can load your first page
 		 - listens to "onpopstate" event, so we can detect browser "Back" clicks etc.
-		
+
 		It will use either Detox or jQuery to run these at startup. (Detox if you're using it already, jQuery otherwise)
 
 		In general you should call this before using any other part of the API.
+
+		@param basePath - The base path of the app, this will be stripped from the raw URL value before passing to handlers.
+		@param triggerFirst - Should we trigger a handler
 	**/
-	public static function init(?basePath = ""):Void {
+	public static function init(?basePath = "", ?triggerFirst:Bool=true):Void {
 		listeners = [];
 		preventers = [];
 		history = win.history;
 		PushState.basePath = basePath;
 
 		// Load on window.onload(), so that permanent URLs work
-		#if detox 
+		#if detox
 			Detox.ready(function () {
 				// Trigger Events
-				handleOnPopState(null);
+				if ( triggerFirst )
+					handleOnPopState(null);
 
 				// Load when a <a href="#" rel="pushstate">PushState Link</a> is pressed
 				Detox.document.on("click", "a[rel=pushstate]", function (e) {
@@ -86,21 +90,22 @@ class PushState
 						e.preventDefault();
 					}
 				});
-				
+
 				// Load when we get a window.onPopState() event
 				win.onpopstate=handleOnPopState;
 			});
-		#else 
+		#else
 			J(win).ready(function (e) {
 				// Trigger Events
-				handleOnPopState(null);
+				if ( triggerFirst )
+					handleOnPopState(null);
 
 				// Load when a <a href="#" rel="pushstate">PushState Link</a> is pressed
 				J(doc.body).delegate("a[rel=pushstate]", "click", function (e) {
 					push(JTHIS.attr("href"));
 					e.preventDefault();
 				});
-				
+
 				// Load when we get a window.onPopState() event
 				win.onpopstate = handleOnPopState;
 			});
@@ -158,15 +163,15 @@ class PushState
 		return l;
 	}
 
-	/** 
-		Remove a specific event listener 
+	/**
+		Remove a specific event listener
 	**/
 	public static function removeEventListener(l:Listener):Void {
 		listeners.remove(l);
 	}
 
-	/** 
-		Remove all event listeners 
+	/**
+		Remove all event listeners
 	**/
 	public static function clearEventListeners():Void {
 		while (listeners.length > 0) {
@@ -174,7 +179,7 @@ class PushState
 		}
 	}
 
-	/** 
+	/**
 		Add a preventer
 
 		A preventer is a simple function that takes the form `function (url:String, state:Dynamic):Bool`
@@ -188,7 +193,7 @@ class PushState
 		at a later time.
 
 		**Note**: If a preventer cancels a "popstate" event from the browser (eg. they clicked 'back'), your history can get messed up.
-		We can't cancel the event properly, so we prevent the handlers from firing and we use `history.replaceState` to reset the URL.  
+		We can't cancel the event properly, so we prevent the handlers from firing and we use `history.replaceState` to reset the URL.
 		This will overwrite that URL in the history, which may not be the behaviour you want.  If you have a suggested workaround, please let me know!
 
 		This returns the preventer added, so you can remove it later.
@@ -224,13 +229,13 @@ class PushState
 
 	/**
 		Use this to manually change the URL of the page without reloading.
-		
+
 		If any preventer functions you have added return false, nothing will happen.
 
 		Otherwise, each of your listeners will be executed and the page history / url will be updated.
 
 		Will return true if the push was successful (not prevented), or false if it was prevented.
-		
+
 		**URL**
 
 		The new history entry's URL is given by this parameter. Note that the browser won't attempt to load this URL after a call to pushState(), but it might attempt to load the URL later, for instance after the user restarts her browser. The new URL does not need to be absolute; if it's relative, it's resolved relative to the current URL. The new URL must be of the same origin as the current URL; otherwise, pushState() will throw an exception. This parameter is optional; if it isn't specified, it's set to the document's current URL.
