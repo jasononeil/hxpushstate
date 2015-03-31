@@ -3,7 +3,7 @@ Pushstate
 
 This is a haxe library wrapping the basic Pushstate functionality for Javascript.  It allows you to update the contents of the page, in an AJAX like way, while still updating the browser's history - so Forward, Back and Bookmark continue to function normally.
 
-The aim of this library is to give Haxe/JS very simple access to the underlying browser functionality, and to help with some very basic use-cases.
+The aim of this library is to give Haxe/JS very simple access to the underlying browser functionality, and to help with some common use-cases.
 
 We do not try to provide a fallback for older browsers currently.
 
@@ -13,14 +13,15 @@ We do not try to provide a fallback for older browsers currently.
 
 ### Usage
 
-To initialise:
+To initialise (call this before anything else):
 	
 	// init() does the following:
-	//   Load on window.onload(), so that permanent URLs work
-	//   Load when a <a href="#" rel="pushstate">PushState Link</a> is pressed
-	//   Load when we get a window.onpopstate() event
-	//   Load when a manual change is triggered...
-	PushState.init();
+	//   Set up the internal state, so the rest of the library will work.
+	//   Intercept link clicks on <a rel="pushstate"> or <a class="pushstate"> links and push a new history state.
+	//   Intercept form submits on <form class="pushstate"> and push a new history state containing form data.
+	//   Add a window.onpopstate event handler so we can respond to history changes.
+	//   Optionally trigger an initial event, in case you need to execute something when the page first loads.
+	PushState.init( ?basePath="/", ?trigger=true );
 
 To add a listener for pushstate events:
 
@@ -34,8 +35,7 @@ To clear listeners:
 
 To manually force a page change:
 
-	// This will trigger all of the event listeners
-	// and the change in the address bar.
+	// This will trigger all of the event listeners and the change in the address bar.
 	// Path is relative to root directory of app
 	PushState.push("/go/somewhere/"); 
 
@@ -45,12 +45,26 @@ To change the URL without creating a new item in the browser history
 
 ### Methods
 
-	PushState.init(basePath:String);
+	PushState.init(basePath:String,trigger:Bool);
 	PushState.addListener(f:String->Void);
 	PushState.removeListener(f:String->Void);
 	PushState.clearEventListeners();
 	PushState.push(url:String);
 	PushState.replace(url:String);
+
+### State data
+
+You can also store some extra data with each history state, on top of just the URL.
+
+        PushState.addListener(f:String->{}->Void);
+        PushState.removeListener(f:String->{}->Void);
+        PushState.clearEventListeners();
+        PushState.push(url:String,data:{});
+        PushState.replace(url:String,data:{});
+
+Data should be a simple object, something a browser can serialize and deserialize easily.
+
+When you submit a form it adds `{ post:$formPostString }` to the data, which you can listen to and treat the reqyest as a "POST" request with access to the form data.
 
 ### Demo
 
@@ -73,6 +87,3 @@ This demo shows a few things:
 
 [Click here to view the source of the demo](https://github.com/jasononeil/hxpushstate/blob/master/src/demo/Test.hx)
 
-### Notes
-
-Currently this library is dependant on jQuery from the Haxe Standard Library, though this can probably be removed easily enough if there is demand for it.
