@@ -11,19 +11,10 @@
 
 package pushstate;
 
-#if detox
-	using Detox;
-#else
-	import haxe.ds.Option;
-	import js.JQuery;
-	import js.JQuery.JQueryHelper.*;
-#end
-
-import js.Browser.window in win;
-import js.Browser.document in doc;
-import js.html.PopStateEvent;
-import js.html.Event;
+import js.Browser.*;
+import js.html.*;
 import pushstate.History;
+using StringTools;
 
 /**
 	PushState
@@ -55,66 +46,115 @@ class PushState
 		Basically it:
 
 		 - initialize the internal state
-		 - gets links with rel="pushstate" to use the PushState API
-		 - launches an initial onStateChange event so you can load your first page
 		 - listens to "onpopstate" event, so we can detect browser "Back" clicks etc.
+		 - gets links with `rel="pushstate"` or `class="pushstate"` to use the PushState API
+		 - if `triggerFirst` is true, launches an initial `onStateChange` event so you can load your first page
 
-		It will use either Detox or jQuery to run these at startup. (Detox if you're using it already, jQuery otherwise)
-
-		In general you should call this before using any other part of the API.
+		You should call `init()` before using any other part of the API.
 
 		@param basePath - The base path of the app, this will be stripped from the raw URL value before passing to handlers.
-		@param triggerFirst - Should we trigger a handler
+		@param triggerFirst - Should we trigger a handler on the initial page load.  Default is true.
 	**/
 	public static function init(?basePath = "", ?triggerFirst:Bool=true):Void {
 		listeners = [];
 		preventers = [];
-		history = win.history;
+		history = window.history;
 		PushState.basePath = basePath;
 
-		// Load on window.onload(), so that permanent URLs work
-		#if detox
-			Detox.ready(function () {
-				// Trigger Events
-				if ( triggerFirst )
-					handleOnPopState(null);
-
-				// Load when a <a href="#" rel="pushstate">PushState Link</a> is pressed
-				Detox.document.on("click", "a[rel=pushstate]", function (e) {
-					var link:DOMNode = cast e.target;
-					while (link.tagName() != "a" && link.parent() != null) {
-						link = link.parent();
-					}
-					if (link.tagName() == "a") {
-						push(link.attr("href"));
-						e.preventDefault();
-					}
-				});
-
-				// Load when we get a window.onPopState() event
-				win.onpopstate=handleOnPopState;
-			});
-		#else
-			J(win).ready(function (e) {
-				// Trigger Events
-				if ( triggerFirst )
-					handleOnPopState(null);
-
-				// Load when a <a href="#" rel="pushstate">PushState Link</a> is pressed
-				J(doc.body).delegate("a[rel=pushstate]", "click", function (e) {
-					push(JTHIS.attr("href"));
+		// This event if not supported by IE8, but then neither is the History.pushstate API.
+		document.addEventListener("DOMContentLoaded", function(event) {
+			// Intercept <a href="..." rel="pushstate"> clicks.
+			// TODO: check, does this break keyboard navigation?
+			document.addEventListener("click",function(e:Event) {
+				var link:AnchorElement = null,
+				    node:Node = Std.instance(e.target,Node);
+				while (link==null && node!=null) {
+					link = Std.instance(node,AnchorElement);
+					node = node.parentNode;
+				}
+				if (link!=null && (link.rel=="pushstate" || hasClass(link,"pushstate"))) {
+					push(link.href);
 					e.preventDefault();
-				});
-
-				// Load when we get a window.onPopState() event
-				win.onpopstate = handleOnPopState;
+				}
 			});
-		#end
+
+			// Intercept <form rel="pushstate"> submits.
+			document.addEventListener("submit",function (e:Event) {
+				var form = Std.instance(e.target,FormElement);
+				if (hasClass(form,"pushstate")) {
+					e.preventDefault();
+					interceptFormSubmit(form);
+				}
+			});
+
+			// Listen to the onpopstate event.
+			window.onpopstate = handleOnPopState;
+
+			// Trigger an initial load.
+			if (triggerFirst)
+				handleOnPopState(null);
+		});
+	}
+
+	inline static function hasClass(elm:Element, className:String) {
+		return ' ${elm.className} '.indexOf(' $className ') > -1;
+	}
+
+	static function interceptFormSubmit(form:FormElement) {
+		var params = [];
+		function addParam(name:String, val:String) {
+			if (name==null || name=="")
+				return;
+			var encodedValue = val.urlEncode();
+			params.push(name+'='+encodedValue);
+		}
+		// Serialization method adapted from http://stackoverflow.com/a/11661219/180995
+		for (i in 0...form.elements.length) {
+			var elm = form.elements.item(i);
+			switch elm.nodeName.toUpperCase() {
+				// TODO: only include submit button if it was the one that was clicked.
+				// TODO: investigate using https://developer.mozilla.org/en-US/docs/Web/API/FormData, it seems to be IE10 only but we may require that anyway.
+				case 'INPUT':
+					var input = Std.instance(elm,InputElement);
+					switch input.type {
+						case 'text','hidden','password','submit','search','email','url','tel','number','range','date','month','week','time','datetime','datetime-local','color': addParam(input.name, input.value);
+						case 'checkbox','radio' if (input.checked): addParam(input.name, input.value);
+						case 'file':
+					}
+				case 'TEXTAREA':
+					var ta = Std.instance(elm,TextAreaElement);
+					addParam(ta.name, ta.value);
+				case 'SELECT':
+					var select = Std.instance(elm,SelectElement);
+					switch select.type {
+						case 'select-one': addParam(select.name, select.value);
+						case 'select-multiple':
+							for (j in 0...select.options.length) {
+								var option:OptionElement = cast select.options[j];
+								if (option.selected) {
+									addParam(select.name, option.value);
+								}
+							}
+					}
+				case 'BUTTON':
+					var button = Std.instance(elm,ButtonElement);
+					switch button.type {
+						case 'submit': addParam(button.name, button.value);
+					}
+			}
+		}
+		if ( form.method.toUpperCase()=="POST" ) {
+			push(form.action,{ post: params.join("&") });
+		}
+		else {
+			trace( 'GET: '+params.join("&") );
+			push(form.action+"?"+params.join("&"),null);
+		}
 	}
 
 	static function handleOnPopState(e:PopStateEvent) {
 		// Read the path from the document location
-		var path:String = stripURL(doc.location.pathname);
+		var path:String = stripURL(document.location.pathname);
 		var state = (e!=null) ? e.state : null;
 
 		// Check that no preventers are blocking us
@@ -261,8 +301,8 @@ class PushState
 		Identical to `push()` except this changes the URL of the page without creating a new History item.
 
 		So for instance:
-		-
-		 - You are on the page "/kittents"
+
+		 - You are on the page "/kittens"
 		 - You use PushState.push("/puppies")
 		 - You are now on "/puppies", if you were to press back you would be on "kittens"
 		 - You now use PushState.replace("/aliens")
