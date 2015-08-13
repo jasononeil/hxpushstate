@@ -1,11 +1,11 @@
 {
   "name": "pushstate",
   "license": "MIT",
-  "tags": ["js","pushstate","history"],
-  "description": "A basic JS library for using PushState to update the browser address bar without doing a full page reload.  Depends on either Detox (if you have `-lib detox`), or js.jQuery otherwise.",
+  "tags": ["js","pushstate","history","web","html5"],
+  "description": "A basic JS library that uses PushState to update the browser address bar, add history items, and emulate requests without doing a full page reload. Great for single-page web applications.",
   "contributors": ["jason"],
-  "releasenote": "Remove dependency on jQuery or Detox. Add support for intercepting form submissions. Add support for `class='pushstate'` as well as `rel='pushstate'`. Add triggerFirst parameter to init(), so you can choose whether to fire an event for the first page load.",
-  "version": "1.1.0",
+  "releasenote": "Improved form submission to make it easier to work with the submitted values. Added support for ignoring anchor `#` links (optional, on by default). Ignore Ctrl-Click, Right Click etc when clicking links.",
+  "version": "2.0.0",
   "classPath": "src/",
   "url": "https://github.com/jasononeil/hxpushstate",
   "dependencies": {
