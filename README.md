@@ -14,7 +14,7 @@ We do not try to provide a fallback for older browsers currently.
 ### Usage
 
 To initialise (call this before anything else):
-	
+
 	// init() does the following:
 	//   Set up the internal state, so the rest of the library will work.
 	//   Intercept link clicks on <a rel="pushstate"> or <a class="pushstate"> links and push a new history state.
@@ -37,11 +37,11 @@ To manually force a page change:
 
 	// This will trigger all of the event listeners and the change in the address bar.
 	// Path is relative to root directory of app
-	PushState.push("/go/somewhere/"); 
+	PushState.push("/go/somewhere/");
 
-To change the URL without creating a new item in the browser history
+To change the URL without creating a new item in the browser history (all listeners will still be triggered):
 
-	PushState.replace("/go/somewhere/else/"); 
+	PushState.replace("/go/somewhere/else/");
 
 ### Methods
 
@@ -56,22 +56,52 @@ To change the URL without creating a new item in the browser history
 
 You can also store some extra data with each history state, on top of just the URL.
 
-        PushState.addListener(f:String->{}->Void);
-        PushState.removeListener(f:String->{}->Void);
-        PushState.clearEventListeners();
-        PushState.push(url:String,data:{});
-        PushState.replace(url:String,data:{});
+	PushState.addListener(f:String->{}->Void);
+	PushState.removeListener(f:String->{}->Void);
+	PushState.clearEventListeners();
+	PushState.push(url:String,data:{});
+	PushState.replace(url:String,data:{});
 
 Data should be a simple object, something a browser can serialize and deserialize easily.
 
-When you submit a form it adds `{ post:$formPostString }` to the data, which you can listen to and treat the reqyest as a "POST" request with access to the form data.
+### Form submission
+
+As well as intercepting link clicks, PushState can intercept form submissions and emulate them.
+
+	<form metod="POST" action="/auth" class="pushstate">
+		<input type="text" name="username" />
+		<input type="password" name="password" />
+
+		<input type="checkbox" name="subscribe" value="Haxe" />
+		<input type="checkbox" name="subscribe" value="PushState" />
+		<input type="checkbox" name="subscribe" value="Ufront" />
+
+		<button type="submit" name="type" value="signup">Sign up</button>
+		<button type="submit" name="type" value="login">Log In</button>
+	</form>
+
+When this form is submitted, pushstate will trigger a call equivalent to:
+
+	PustState.push("/auth", {
+		username:["jason"],
+		password:["my_little_secret"],
+		subcribe:["Haxe","Pushstate"],
+		type:["signup"],
+		__postData:"username=jason&password=my_little_secret&subscribe=Haxe&subscribe=Pushstate&type=signup"
+	});
+
+If the form method was `GET` instead of `POST`, PushState will trigger a call equivalent to:
+
+	PushState.puh("/auth?username=jason&password=my_little_secret&subscribe=Haxe&subscribe=Pushstate&type=signup");
+
+Most common form elements are supported.  If you find any that aren't or that could be improved please file an issue.
 
 ### Demo
 
 To run the demo:
 
 1. Clone the repository, and run `haxe build.hxml`.  
-2. From the 'build' directory, run `nekotools server -rewrite`
+2. From the 'demo/build' directory, run `nekotools server -rewrite`
 3. Open `http://localhost:2000/` in your browser
 
 This demo shows a few things:
@@ -86,4 +116,3 @@ This demo shows a few things:
  	* This ensures the code will work on older browsers, or if someone arrives via a link or bookmark, etc.
 
 [Click here to view the source of the demo](https://github.com/jasononeil/hxpushstate/blob/master/src/demo/Test.hx)
-

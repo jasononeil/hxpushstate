@@ -115,7 +115,7 @@ class PushState
 			if (name==null || name=="")
 				return;
 			var encodedValue = val.urlEncode();
-			params.push(name+'='+encodedValue);
+			params.push({ name:name, val:encodedValue });
 		}
 		// Serialization method adapted from http://stackoverflow.com/a/11661219/180995
 		for (i in 0...form.elements.length) {
@@ -152,12 +152,20 @@ class PushState
 					}
 			}
 		}
+		var paramString = params.map(function(p) return '${p.name}=${p.val}').join("&");
 		if ( form.method.toUpperCase()=="POST" ) {
-			push(form.action,{ post: params.join("&") });
+			var paramsObj = {};
+			for (p in params) {
+				if (Reflect.hasField(paramsObj,p.name))
+					(Reflect.field(paramsObj,p.name):Array<String>).push(p.val);
+				else
+					Reflect.setField(paramsObj, p.name, [p.val]);
+			}
+			Reflect.setField( paramsObj, "__postData", paramString );
+			push(form.action,paramsObj);
 		}
 		else {
-			trace( 'GET: '+params.join("&") );
-			push(form.action+"?"+params.join("&"),null);
+			push(form.action+"?"+paramString,null);
 		}
 	}
 
