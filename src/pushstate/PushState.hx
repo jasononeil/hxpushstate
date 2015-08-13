@@ -32,6 +32,7 @@ using StringTools;
 **/
 class PushState
 {
+	static var ignoreAnchors:Bool = true;
 	static var basePath:String;
 	static var preventers:Array<Preventer>;
 	static var listeners:Array<Listener>;
@@ -54,27 +55,31 @@ class PushState
 
 		@param basePath - The base path of the app, this will be stripped from the raw URL value before passing to handlers.
 		@param triggerFirst - Should we trigger a handler on the initial page load.  Default is true.
+		@param ignorAnchors - Will clicking an anchor link (or switching between anchors using history) be ignored? Default is true.
 	**/
-	public static function init(?basePath = "", ?triggerFirst:Bool=true):Void {
+	public static function init(?basePath = "", ?triggerFirst:Bool=true, ?ignoreAnchors:Bool=true):Void {
 		listeners = [];
 		preventers = [];
 		history = window.history;
 		PushState.basePath = basePath;
+		PushState.ignoreAnchors = ignoreAnchors;
 
 		// This event if not supported by IE8, but then neither is the History.pushstate API.
 		document.addEventListener("DOMContentLoaded", function(event) {
 			// Intercept <a href="..." rel="pushstate"> clicks.
 			// TODO: check, does this break keyboard navigation?
-			document.addEventListener("click",function(e:Event) {
-				var link:AnchorElement = null,
-				    node:Node = Std.instance(e.target,Node);
-				while (link==null && node!=null) {
-					link = Std.instance(node,AnchorElement);
-					node = node.parentNode;
-				}
-				if (link!=null && (link.rel=="pushstate" || hasClass(link,"pushstate"))) {
-					push(link.href);
-					e.preventDefault();
+			document.addEventListener("click",function(e:MouseEvent) {
+				if (e.button==0 && !e.metaKey && !e.ctrlKey) {
+					var link:AnchorElement = null,
+					    node:Node = Std.instance(e.target,Node);
+					while (link==null && node!=null) {
+						link = Std.instance(node,AnchorElement);
+						node = node.parentNode;
+					}
+					if (link!=null && (link.rel=="pushstate" || hasClass(link,"pushstate"))) {
+						push(link.pathname+link.search+link.hash);
+						e.preventDefault();
+					}
 				}
 			});
 
@@ -91,13 +96,17 @@ class PushState
 			window.onpopstate = handleOnPopState;
 
 			// Trigger an initial load.
-			if (triggerFirst)
+			if (triggerFirst) {
 				handleOnPopState(null);
+			}
+			else {
+				currentPath = stripURL(document.location.pathname+document.location.search+document.location.hash);
+			}
 		});
 	}
 
 	inline static function hasClass(elm:Element, className:String) {
-		return ' ${elm.className} '.indexOf(' $className ') > -1;
+		return elm.classList.contains( className );
 	}
 
 	static function interceptFormSubmit(form:FormElement) {
@@ -154,8 +163,13 @@ class PushState
 
 	static function handleOnPopState(e:PopStateEvent) {
 		// Read the path from the document location
-		var path:String = stripURL(document.location.pathname);
+		var path = stripURL(document.location.pathname+document.location.search+document.location.hash);
 		var state = (e!=null) ? e.state : null;
+
+		// If this is just a hash change, and we're ignoring anchors, then don't trigger anything.
+		if (ignoreAnchors && path==currentPath) {
+			return;
+		}
 
 		// Check that no preventers are blocking us
 		if (e!=null) {
@@ -171,15 +185,17 @@ class PushState
 		currentPath = path;
 		currentState = state;
 
-		dispatch(path, state);
+		dispatch(currentPath, currentState);
 		return;
 	}
 
 	static function stripURL(path:String) {
 		// strip the basePath from the path, if it is present
-		if (path.substr(0,basePath.length) == basePath) {
+		if (path.substr(0,basePath.length) == basePath)
 			path = path.substr(basePath.length);
-		}
+		// Strip the anchor if we are ignoring them.
+		if (ignoreAnchors && path.indexOf("#")>-1)
+			path = path.substr(0,path.indexOf("#"));
 		return path;
 	}
 
@@ -286,14 +302,15 @@ class PushState
 		The state object can be anything that can be serialized. Because Firefox saves state objects to the user's disk so they can be restored after the user restarts her browser, we impose a size limit of 640k characters on the serialized representation of a state object. If you pass a state object whose serialized representation is larger than this to pushState(), the method will throw an exception. If you need more space than this, you're encouraged to use sessionStorage and/or localStorage.
 	**/
 	public static function push(url:String, ?state:Dynamic):Bool {
+		var strippedURL = stripURL(url);
 		if (state==null) state = {};
 		for (p in preventers) {
-			if (!p(url,state)) return false;
+			if (!p(strippedURL,state)) return false;
 		}
 		history.pushState(state, "", url);
-		currentPath = url;
+		currentPath = strippedURL;
 		currentState = state;
-		dispatch(url,state);
+		dispatch(strippedURL,state);
 		return true;
 	}
 
@@ -311,14 +328,15 @@ class PushState
 		Will return true if the request was successful (not prevented) or false if it was prevented.
 	**/
 	public static function replace(url:String, ?state:Dynamic):Bool {
+		var strippedURL = stripURL(url);
 		if (state==null) state = Dynamic;
 		for (p in preventers) {
-			if (!p(url,state)) return false;
+			if (!p(strippedURL,state)) return false;
 		}
 		history.replaceState(state, "", url);
-		currentPath = url;
+		currentPath = strippedURL;
 		currentState = state;
-		dispatch(url,state);
+		dispatch(strippedURL,state);
 		return true;
 	}
 }
