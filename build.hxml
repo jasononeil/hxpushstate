@@ -1,6 +1,5 @@
 -cp src/
 -cp demo/
 -main Test
--D embed_js
 -js demo/build/test.js
--xml haxedoc.xml
+

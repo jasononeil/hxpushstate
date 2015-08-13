@@ -1,23 +1,20 @@
 /****
 * Copyright (c) 2012 Jason O'Neil
-* 
+*
 * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-* 
+*
 * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-* 
+*
 * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-* 
+*
 ****/
 
-#if detox 
-	using Detox;
-#else 
-	import js.JQuery.JQueryHelper.*;
-#end 
 import pushstate.PushState;
-import js.Browser.document in doc;
+import js.Browser.*;
+import js.html.*;
+using StringTools;
 
-class Test 
+class Test
 {
 	static var stateChangeCount = 0;
 
@@ -28,62 +25,53 @@ class Test
 		PushState.init();
 
 		// Next we add a listener to any changes
-		PushState.addEventListener(function (url) {
+		PushState.addEventListener(function (url,state) {
+			window.console.log('New pushstate URL: $url');
 
-			// Show user if this was a page reload or pushstate
-			stateChangeCount++;
-			if (stateChangeCount > 1)
-			{
-				#if detox 
-					"#load-type".find().setText("This content was a push-state");
-				#else 
-					J("#load-type").text("This content was a push-state");
-				#end
+			if (url.endsWith("/custom")) {
+				var animal = state.animal[0];
+				console.log('Redirecting to /$animal');
+				PushState.replace( '$animal' );
 			}
-			
-			// Change the content.  
-			// In real life this would probably be an AJAX call
-			#if detox 
-				"#content".find().setText("I want to become a " + url);
-			#else 
-				J("#content").text("I want to become a " + url);
-			#end
+			else {
+				// Show user if this was a page reload or pushstate
+				stateChangeCount++;
+				if (stateChangeCount > 1)
+				{
+					document.getElementById("load-type").innerHTML = "This content was a push-state";
+				}
 
+				// Change the content.
+				// In real life this would probably be an AJAX call and some complex logic.
+				document.getElementById("content").innerHTML = 'I want to become a $url';
+			}
 		});
 
-		var preventer = function(url) return js.Browser.window.confirm('Switch to $url?');
+		document.addEventListener("DOMContentLoaded", function(event) {
+			// J("#animal-form").submit(function (e) {
+			// 	// When the form is submitted, use the value of the input as our new URL, and trigger PushState
+			// 	var value = JTHIS.find("input").val();
+			// 	PushState.push("/" + value);
+			// 	e.preventDefault();
+			// });
 
-		// We can also trigger changes to the history API (and therefore pushstate events) manually
-		#if detox 
-			Detox.ready(function () {
-				"#animal-form".find().submit(function (e) {
-					var value = "#animal-form input".find().val();
-					PushState.push("/" + value); 
-					e.preventDefault();
-				});
-				togglePreventer( "#toggle-preventer".find(), preventer );
-			});
-		#else 
-			J(untyped doc).ready(function (e) {
-				J("#animal-form").submit(function (e) {
-					// When the form is submitted, use the value of the input as our new URL, and trigger PushState
-					var value = JTHIS.find("input").val();
-					PushState.push("/" + value); 
-					e.preventDefault();
-				});
-				togglePreventer( J("#toggle-preventer"), preventer );
-			});
-		#end
+			// Escape artist.
+
+			// Set up a preventer.
+			var btn = document.getElementById("toggle-preventer");
+			var preventer = function(url) return js.Browser.window.confirm('Switch to $url?');
+			setupPreventerToggle( btn, preventer );
+		});
 	}
 
-	static function togglePreventer(btn #if detox :dtx.DOMCollection #end, preventer:String->Bool) {
-		btn.click(function (e) {
-			if (btn.hasClass("active")) {
-				btn.removeClass("active");
+	static function setupPreventerToggle(btn:Element, preventer:String->Bool) {
+		btn.addEventListener("click", function (e) {
+			if (btn.classList.contains("active")) {
+				btn.classList.remove("active");
 				PushState.clearPreventers();
 			}
 			else {
-				btn.addClass("active");
+				btn.classList.add("active");
 				PushState.addPreventer(preventer);
 			}
 		});

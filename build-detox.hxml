@@ -1,8 +1,0 @@
--cp src/
--cp demo/
--main Test
--lib detox
--D embed_js
--js demo/build/test.js
--xml haxedoc.xml
-
