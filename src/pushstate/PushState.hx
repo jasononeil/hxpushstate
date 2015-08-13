@@ -114,8 +114,7 @@ class PushState
 		function addParam(name:String, val:String) {
 			if (name==null || name=="")
 				return;
-			var encodedValue = val.urlEncode();
-			params.push({ name:name, val:encodedValue });
+			params.push({ name:name, val:val });
 		}
 		// Serialization method adapted from http://stackoverflow.com/a/11661219/180995
 		for (i in 0...form.elements.length) {
@@ -152,7 +151,7 @@ class PushState
 					}
 			}
 		}
-		var paramString = params.map(function(p) return '${p.name}=${p.val}').join("&");
+		var paramString = params.map(function(p) return '${p.name}=${p.val.urlEncode()}').join("&");
 		if ( form.method.toUpperCase()=="POST" ) {
 			var paramsObj = {};
 			for (p in params) {
