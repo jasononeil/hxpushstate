@@ -4,8 +4,8 @@
   "tags": ["js","pushstate","history","web","html5"],
   "description": "A basic JS library that uses PushState to update the browser address bar, add history items, and emulate requests without doing a full page reload. Great for single-page web applications.",
   "contributors": ["jason"],
-  "releasenote": "Improved form submission to make it easier to work with the submitted values. Added support for ignoring anchor `#` links (optional, on by default). Ignore Ctrl-Click, Right Click etc when clicking links.",
-  "version": "2.0.0",
+  "releasenote": "Bug fix: when intercepting form submissions, only add values from submit buttons if that button was clicked, or if it was the default button.",
+  "version": "2.0.1",
   "classPath": "src/",
   "url": "https://github.com/jasononeil/hxpushstate",
   "dependencies": {

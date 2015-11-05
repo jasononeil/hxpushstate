@@ -96,6 +96,9 @@ If the form method was `GET` instead of `POST`, PushState will trigger a call eq
 
 Most common form elements are supported.  If you find any that aren't or that could be improved please file an issue.
 
+A note on submit buttons: if `document.activeElement` is a submit button, the value of that button will be used.
+Otherwise, if the first submit button that is a child of the form will be considered the default submit button, and it will be used.
+
 ### Demo
 
 To run the demo:
