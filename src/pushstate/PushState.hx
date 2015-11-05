@@ -117,15 +117,14 @@ class PushState
 			params.push({ name:name, val:val });
 		}
 		// Serialization method adapted from http://stackoverflow.com/a/11661219/180995
+		// Note we can't use FormData because it cannot be inspected / iterated over.
 		for (i in 0...form.elements.length) {
 			var elm = form.elements.item(i);
 			switch elm.nodeName.toUpperCase() {
-				// TODO: only include submit button if it was the one that was clicked.
-				// TODO: investigate using https://developer.mozilla.org/en-US/docs/Web/API/FormData, it seems to be IE10 only but we may require that anyway.
 				case 'INPUT':
 					var input = Std.instance(elm,InputElement);
 					switch input.type {
-						case 'text','hidden','password','submit','search','email','url','tel','number','range','date','month','week','time','datetime','datetime-local','color': addParam(input.name, input.value);
+						case 'text','hidden','password','search','email','url','tel','number','range','date','month','week','time','datetime','datetime-local','color': addParam(input.name, input.value);
 						case 'checkbox','radio' if (input.checked): addParam(input.name, input.value);
 						case 'file':
 					}
@@ -144,13 +143,21 @@ class PushState
 								}
 							}
 					}
-				case 'BUTTON':
-					var button = Std.instance(elm,ButtonElement);
-					switch button.type {
-						case 'submit': addParam(button.name, button.value);
-					}
 			}
 		}
+		// Check if there was a submit button value:
+		var activeInput = Std.instance( document.activeElement, InputElement );
+		var activeBtn = Std.instance( document.activeElement, ButtonElement );
+		if ( activeInput!=null && activeInput.type=="submit" ) addParam( activeInput.name, activeInput.value );
+		else if ( activeBtn!=null && activeBtn.type=="submit" ) addParam( activeBtn.name, activeBtn.value );
+		else {
+			var defaultSubmit = form.querySelector( "input[type=submit], button[type=submit]" );
+			var defaultInput = Std.instance( defaultSubmit, InputElement );
+			var defaultBtn = Std.instance( defaultSubmit, ButtonElement );
+			if ( defaultInput!=null ) addParam( defaultInput.name, defaultInput.value );
+			else if ( defaultBtn!=null ) addParam( defaultBtn.name, defaultBtn.value );
+		}
+		// Push the new URL (and if it is a POST request, also the data).
 		var paramString = params.map(function(p) return '${p.name}=${p.val.urlEncode()}').join("&");
 		if ( form.method.toUpperCase()=="POST" ) {
 			var paramsObj = {};
