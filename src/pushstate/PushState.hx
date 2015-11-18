@@ -343,15 +343,24 @@ class PushState
 	**/
 	public static function replace(url:String, ?state:Dynamic):Bool {
 		var strippedURL = stripURL(url);
-		if (state==null) state = Dynamic;
+		if (state==null) state = {};
 		for (p in preventers) {
 			if (!p(strippedURL,state)) return false;
 		}
+		silentReplace(url, state);
+		dispatch(strippedURL,state);
+		return true;
+	}
+
+	/**
+		Replace the current history item without checking any preventers or dispatching any events.
+	**/
+	public static function silentReplace(url:String, ?state:Dynamic):Void {
+		var strippedURL = stripURL(url);
+		if (state==null) state = {};
 		history.replaceState(state, "", url);
 		currentPath = strippedURL;
 		currentState = state;
-		dispatch(strippedURL,state);
-		return true;
 	}
 }
 

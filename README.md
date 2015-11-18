@@ -41,7 +41,11 @@ To manually force a page change:
 
 To change the URL without creating a new item in the browser history (all listeners will still be triggered):
 
-	PushState.replace("/go/somewhere/else/");
+	PushState.replace("/change/url/and/execute/actions/");
+
+To change the URL without creating a new item in the browser history, and without triggering any listeners:
+
+	PushState.silentReplace("/change/url/without/executing/actions/");
 
 ### Methods
 
@@ -51,6 +55,7 @@ To change the URL without creating a new item in the browser history (all listen
 	PushState.clearEventListeners();
 	PushState.push(url:String);
 	PushState.replace(url:String);
+	PushState.silentReplace(url:String);
 
 ### State data
 
@@ -61,6 +66,7 @@ You can also store some extra data with each history state, on top of just the U
 	PushState.clearEventListeners();
 	PushState.push(url:String,data:{});
 	PushState.replace(url:String,data:{});
+	PushState.silentReplace(url:String,data:{});
 
 Data should be a simple object, something a browser can serialize and deserialize easily.
 
