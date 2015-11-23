@@ -4,8 +4,12 @@
   "tags": ["js","pushstate","history","web","html5"],
   "description": "A basic JS library that uses PushState to update the browser address bar, add history items, and emulate requests without doing a full page reload. Great for single-page web applications.",
   "contributors": ["jason"],
-  "releasenote": "Bug fix: when intercepting form submissions, only add values from submit buttons if that button was clicked, or if it was the default button.",
-  "version": "2.0.1",
+  "releasenote": "- Add support for including file uploads (Javascript `FileList` objects) in the history state.
+- Add support for reading `<input type=file>` while intercepting form submissions.
+- Make `currentPath`, `currentState` and `currentUploads` readonly.
+- Add `PushState.silentReplace()` to update the URL and state without checking preventers or triggering listeners.
+- Get rid of the old (and unused) `pushstate.History` interface.",
+  "version": "2.1.0",
   "classPath": "src/",
   "url": "https://github.com/jasononeil/hxpushstate",
   "dependencies": {
