@@ -17,21 +17,25 @@ import pushstate.History;
 using StringTools;
 
 /**
-	PushState
+PushState
 
-	This class is used to access, trigger and listen to the HTML5 History API.
-	This allows you to trigger changes to the pages content using Javascript,
-	and update the URL of the page so that browser features such as bookmarking,
-	clicking "back" or "forward", and sharing links still work.
+This class is used to access, trigger and listen to the HTML5 History API.
+This allows you to trigger changes to the pages content using Javascript,
+and update the URL of the page so that browser features such as bookmarking,
+clicking "back" or "forward", and sharing links still work.
 
-	This library is accessed using static methods, and accesses only part
-	of the History API for simplicity.  Full support may be added later.
+This library is accessed using static methods, and accesses only part
+of the History API for simplicity.
 
-	This library does not fix any cross-browser issues or provide a #hash fallback
-	for older browsers.  I've tried to keep it lightweight and simple.
+On top of interacting with the History API and listening to history events,
+methods are provided for intercepting link clicks or form submissions to trigger
+URL changes (See `init()`), and to trigger URL changes manually (See `push()`,
+`replace()` and `silentReplace()`).
+
+This library does not fix any cross-browser issues or provide a #hash fallback
+for older browsers.
 **/
-class PushState
-{
+class PushState {
 	static var ignoreAnchors:Bool = true;
 	static var basePath:String;
 	static var preventers:Array<Preventer>;
@@ -43,20 +47,21 @@ class PushState
 	public static var currentUploads:Null<Dynamic<FileList>>;
 
 	/**
-		Initialize the PushState API for the current page.
+	Initialize the PushState API for the current page.
 
-		Basically it:
+	This will:
 
-		 - initialize the internal state
-		 - listens to "onpopstate" event, so we can detect browser "Back" clicks etc.
-		 - gets links with `rel="pushstate"` or `class="pushstate"` to use the PushState API
-		 - if `triggerFirst` is true, launches an initial `onStateChange` event so you can load your first page
+	 - Initialize the internal state.
+	 - Listen to the `onpopstate` event, so we can detect browser history changes ("Back" / "Forward" etc).
+	 - Intercept link clicks for links with `rel="pushstate"` or `class="pushstate"`, and use the PushState API to set the new URL.
+	 - Intercept form submissions for forms with `class="pushstate"` and use the PushState API to set the URL, the state and uploads.
+	 - If `triggerFirst` is true, launches an initial `onStateChange` event so you can load your first page.
 
-		You should call `init()` before using any other part of the API.
+	You should call `init()` before using any other part of the API.
 
-		@param basePath - The base path of the app, this will be stripped from the raw URL value before passing to handlers.
-		@param triggerFirst - Should we trigger a handler on the initial page load.  Default is true.
-		@param ignorAnchors - Will clicking an anchor link (or switching between anchors using history) be ignored? Default is true.
+	@param basePath - The base path of the app, this will be stripped from the raw URL value, with the shortened (stripped) URL being passed to the event listeners.
+	@param triggerFirst - If true, trigger an initial event to render the page.  Default is true.
+	@param ignorAnchors - Will clicking an anchor link (or switching between anchors using history) be ignored (true) or trigger the usual events (false)? Default is true (ignore).
 	**/
 	public static function init(?basePath = "", ?triggerFirst:Bool=true, ?ignoreAnchors:Bool=true):Void {
 		listeners = [];
@@ -254,15 +259,16 @@ class PushState
 	}
 
 	/**
-		Add event listener to be run every time the page URL changes.
+	Add event listener to be run every time the page URL changes.
 
-		Event listeners can take one of the following forms:
+	Event listeners can take one of the following forms:
 
-		- `function( url:String, state:Dynamic, files:Dynamic<FileList> ):Void`
-		- `function( url:String, state:Dynamic ):Void`
-		- `function( url:String ):Void`
+	- `function( url:String, state:Dynamic, files:Dynamic<FileList> ):Void`
+	- `function( url:String, state:Dynamic ):Void`
+	- `function( url:String ):Void`
 
-		This will return the Listener that you added, which is handy for removing it later.
+	The shorter listener forms will be wrapped in a function compatible with `PathStateUploadsListener`.
+	The wrapped listener will be returned, and can be used with `removeEventListener` to remove this specific listener at a later time.
 	**/
 	public static function addEventListener(?l1:PathStateUploadsListener, ?l2:PathStateListener, ?l3:PathListener):Listener {
 		var l =
@@ -275,14 +281,16 @@ class PushState
 	}
 
 	/**
-		Remove a specific event listener
+	Remove a specific event listener.
+
+	You should use the Listener returned by `addEventListener` to make sure this works with wrapped functions.
 	**/
 	public static function removeEventListener(l:Listener):Void {
 		listeners.remove(l);
 	}
 
 	/**
-		Remove all event listeners
+	Remove all event listeners.
 	**/
 	public static function clearEventListeners():Void {
 		while (listeners.length > 0) {
@@ -291,28 +299,29 @@ class PushState
 	}
 
 	/**
-		Add a preventer
+	Add a preventer to check if a user is allowed to navigate away from the current URL.
 
-		A preventer function can take the following forms:
+	A preventer function can take the following forms:
 
-		- `function( url:String, state:Dynamic, files:Dynamic<FileList> ):Bool`
-		- `function( url:String, state:Dynamic ):Bool`
-		- `function( url:String ):Bool`
+	- `function( url:String, state:Dynamic, files:Dynamic<FileList> ):Bool`
+	- `function( url:String, state:Dynamic ):Bool`
+	- `function( url:String ):Bool`
 
-		If a preventer returns false, PushState will prevent the page history from being changed and any listeners from being fired.
+	If a preventer returns false, PushState will prevent the page history from being changed and any listeners from being fired.
 
-		This is useful for things like ensuring a user has saved their progress before leaving the page.
+	This is useful for things like ensuring a user has saved their progress before leaving the page.
 
-		If you wish merely to defer the change in state, you can keep the url and state data and use it again with:
-		  `Pushstate.push( url, state, uploads );`
-		at a later time.
+	If you wish merely to defer the change in state, you can keep the url and state data and use it again with:
+	  `Pushstate.push( url, state, uploads );`
+	at a later time.
 
-		**Note**: If a preventer cancels a "popstate" event from the browser (eg. they clicked 'back'), your history can get messed up.
-		We can't cancel the event properly, so we prevent the handlers from firing and we use `history.replaceState` to reset the URL.
-		This will overwrite that URL in the history, which may not be the behaviour you want.
-		If you have a suggested workaround, please let me know!
+	**Note**: If a preventer cancels a "popstate" event from the browser (eg. they clicked 'back'), your history can get messed up.
+	We can't cancel the event properly, so we prevent the handlers from firing and we use `history.replaceState` to reset the URL.
+	This will overwrite that URL in the history, which may not be the behaviour you want.
+	If you have a suggested workaround, please let us know!
 
-		This returns the preventer added, so you can remove it later.
+	The shorter preventer forms will be wrapped in a function compatible with `PathStateUploadsPreventer`.
+	The wrapped preventer will be returned, and can be used with `removePreventer` to remove this specific preventer at a later time.
 	**/
 	public static function addPreventer(?p1:PathStateUploadsPreventer, ?p2:PathStatePreventer, ?p3:PathPreventer):Preventer {
 		var p =
@@ -324,12 +333,12 @@ class PushState
 		return p;
 	}
 
-	/** Remove a specific preventer */
+	/** Remove a specific preventer. */
 	public static function removePreventer(p:Preventer):Void {
 		preventers.remove(p);
 	}
 
-	/** Remove all preventers */
+	/** Remove all preventers. */
 	public static function clearPreventers():Void {
 		while (preventers.length > 0) {
 			preventers.pop();
@@ -343,22 +352,19 @@ class PushState
 	}
 
 	/**
-		Use this to manually change the URL of the page without reloading.
+	Manually change the URL of the browser window, adding a new history item and triggering all listeners.
 
-		If any preventer functions you have added return false, nothing will happen.
+	If any preventer functions you have added return `false`, the push will be cancelled and the URL will remain unchanged.
 
-		Otherwise, each of your listeners will be executed and the page history / url will be updated.
+	Otherwise, the URL, state and uploads will be updated, a new history item created, and each of the listeners will be executed.
 
-		Will return true if the push was successful (not prevented), or false if it was prevented.
+	While this will not trigger a HTTP request to a new URL, it is possible that one will be executed by the browser in future.
+	For example, if the user reloads the tab after a `push()` call has been made, a GET request to that URL will be executed.
 
-		**URL**
-
-		The new history entry's URL is given by this parameter. Note that the browser won't attempt to load this URL after a call to pushState(), but it might attempt to load the URL later, for instance after the user restarts her browser. The new URL does not need to be absolute; if it's relative, it's resolved relative to the current URL. The new URL must be of the same origin as the current URL; otherwise, pushState() will throw an exception. This parameter is optional; if it isn't specified, it's set to the document's current URL.
-
-		**STATE**
-
-		The state object is a JavaScript object which is associated with the new history entry created by pushState(). Whenever the user navigates to the new state, a popstate event is fired, and the state property of the event contains a copy of the history entry's state object.
-		The state object can be anything that can be serialized. Because Firefox saves state objects to the user's disk so they can be restored after the user restarts her browser, we impose a size limit of 640k characters on the serialized representation of a state object. If you pass a state object whose serialized representation is larger than this to pushState(), the method will throw an exception. If you need more space than this, you're encouraged to use sessionStorage and/or localStorage.
+	@param url The new history entry's URL. If this includes the `basePath` it will be filtered before triggering listeners. If this includes an anchor link (following a `#`) and we ignoring anchors, this will also be filtered before triggering listeners.
+	@param state (optional) An object to be serialized and associated with this page in history. This is useful for saving page state, saving form data, etc.  The object must be serializable, so simple anonymous objects which can be serialized to JSON are preferred. See [this Mozilla tutorial for details](https://developer.mozilla.org/en-US/docs/Web/API/History_API#The_pushState%28%29_method). The default value is an empty anonymous object.
+	@param uploads (optional) Any `FileList` references to be associated with this page in history. The default value is null (no uploads).
+	@return `true` if the push was successful (not prevented), or `false` if it was prevented.
 	**/
 	public static function push(url:String, ?state:Dynamic, ?uploads:Dynamic<FileList>):Bool {
 		var strippedURL = stripURL(url);
@@ -376,17 +382,19 @@ class PushState
 	}
 
 	/**
-		Identical to `push()` except this changes the URL of the page without creating a new History item.
+	Identical to `push()` except this changes the URL of the page without creating a new History item.
 
-		So for instance:
+	For example:
 
-		 - You are on the page "/kittens"
-		 - You use PushState.push("/puppies")
-		 - You are now on "/puppies", if you were to press back you would be on "kittens"
-		 - You now use PushState.replace("/aliens")
-		 - The URL is not "/aliens", but if you were to press back it would go to "/kittens" (NOT "/puppies"), because a new History item was not created.
+	 - You are on the page "/kittens"
+	 - You use PushState.push("/puppies")
+	 - You are now on "/puppies", if you were to press back you would be on "kittens"
+	 - You now use PushState.replace("/aliens")
+	 - The URL is not "/aliens", but if you were to press back it would go to "/kittens" (NOT "/puppies"), because a new History item was not created.
 
-		Will return true if the request was successful (not prevented) or false if it was prevented.
+	If any preventers return false, the history item will not be replaced and no event listeners will be fired.
+
+	See `push()` for details on each parameter and the return value.
 	**/
 	public static function replace(url:String, ?state:Dynamic, ?uploads:Dynamic<FileList>):Bool {
 		var strippedURL = stripURL(url);
@@ -400,7 +408,12 @@ class PushState
 	}
 
 	/**
-		Replace the current history item without checking any preventers or dispatching any events.
+	Replace the current history item without checking any preventers or dispatching any events.
+
+	This is useful for updating some page state without affecting the appearance of navigating to a new page.
+	For example, you could save some internal data about the state of the page, such as form field values or scroll position, to restore the page more completely when the user clicks "back" at a later time.
+
+	See `push()` for details on each parameter.
 	**/
 	public static function silentReplace(url:String, ?state:Dynamic, ?uploads:Dynamic<FileList>):Void {
 		var strippedURL = stripURL(url);
@@ -413,11 +426,37 @@ class PushState
 	}
 }
 
+/**
+A `PushState` listener that will respond to changes in the browser history.
+
+For example:
+
+- if the user clicks a `rel="pushstate"` or `class="pushstate"` link
+- submits a `class="pushstate"` form
+- calls `PushState.push()` or `PushState.replace()`
+- or clicks "back" and "forward" in the browser.
+
+When using `PushState.addEventListener()`, you can also use the shortened functions `PathStateListener` and `PathListener`, and they will be wrapped into the full form `PathStateUploadsListener`.  The wrapped function will be returned and can be used with `PushState.removeEventListener()`.
+**/
 typedef Listener = PathStateUploadsListener;
+/**
+A `PushState` preventer that will check if the user is allowed to navigate away from the current page.
+
+These will be checked before a URL change is permitted.
+If they return false, the page history will not be updated, and no event listeners will be executed.
+
+When using `PushState.addPreventer()`, you can also use the shortened functions `PathStatePreventer` and `PathPreventer`, and they will be wrapped into the full form `PathStateUploadsPreventer`.  The wrapped function will be returned and can be used with `PushState.removePreventer()`.
+**/
 typedef Preventer = PathStateUploadsPreventer;
+/** A `PushState` listener that listens for the new URL, the new state object and the new uploads. **/
 typedef PathStateUploadsListener = String->Dynamic->Dynamic<FileList>->Void;
+/** A `PushState` preventer that checks against the new URL, the new state object and the new uploads. **/
 typedef PathStateUploadsPreventer = String->Dynamic->Dynamic<FileList>->Bool;
+/** A `PushState` listener that listens for the new URL and the new state object. **/
 typedef PathStateListener = String->Dynamic->Void;
+/** A `PushState` preventer that checks against the new URL and the new state object. **/
 typedef PathStatePreventer = String->Dynamic->Bool;
+/** A `PushState` listener that only listens for the new URL. **/
 typedef PathListener = String->Void;
+/** A `PushState` preventer that only checks against the new URL. **/
 typedef PathPreventer = String->Bool;
