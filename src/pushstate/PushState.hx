@@ -42,9 +42,12 @@ class PushState {
 	static var listeners:Array<Listener>;
 	static var uploadCache:Map<String,Dynamic<FileList>>;
 
-	public static var currentPath:String;
-	public static var currentState:Dynamic;
-	public static var currentUploads:Null<Dynamic<FileList>>;
+	/** The URL of the current history item (what is showing in the URL bar currently). **/
+	public static var currentPath(default,null):String;
+	/** The state object of the current history item. **/
+	public static var currentState(default,null):Dynamic;
+	/** The uploads object (if any) of the current history item. **/
+	public static var currentUploads(default,null):Null<Dynamic<FileList>>;
 
 	/**
 	Initialize the PushState API for the current page.
