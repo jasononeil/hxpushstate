@@ -36,10 +36,11 @@ class PushState
 	static var basePath:String;
 	static var preventers:Array<Preventer>;
 	static var listeners:Array<Listener>;
-	static var history:js.html.History;
+	static var uploadCache:Map<String,Dynamic<FileList>>;
 
 	public static var currentPath:String;
 	public static var currentState:Dynamic;
+	public static var currentUploads:Null<Dynamic<FileList>>;
 
 	/**
 		Initialize the PushState API for the current page.
@@ -60,7 +61,7 @@ class PushState
 	public static function init(?basePath = "", ?triggerFirst:Bool=true, ?ignoreAnchors:Bool=true):Void {
 		listeners = [];
 		preventers = [];
-		history = window.history;
+		uploadCache = new Map();
 		PushState.basePath = basePath;
 		PushState.ignoreAnchors = ignoreAnchors;
 
@@ -101,6 +102,8 @@ class PushState
 			}
 			else {
 				currentPath = stripURL(document.location.pathname+document.location.search+document.location.hash);
+				currentState = null;
+				currentUploads = null;
 			}
 		});
 	}
@@ -111,10 +114,19 @@ class PushState
 
 	static function interceptFormSubmit(form:FormElement) {
 		var params = [];
+		var uploads:Dynamic<FileList> = null;
 		function addParam(name:String, val:String) {
 			if (name==null || name=="")
 				return;
 			params.push({ name:name, val:val });
+		}
+		function addUpload(name:String, files:FileList) {
+			for (i in 0...files.length) {
+				addParam(name, files[i].name);
+			}
+			if (uploads==null)
+				uploads = {};
+			Reflect.setField( uploads, name, files );
 		}
 		// Serialization method adapted from http://stackoverflow.com/a/11661219/180995
 		// Note we can't use FormData because it cannot be inspected / iterated over.
@@ -127,6 +139,8 @@ class PushState
 						case 'text','hidden','password','search','email','url','tel','number','range','date','month','week','time','datetime','datetime-local','color': addParam(input.name, input.value);
 						case 'checkbox','radio' if (input.checked): addParam(input.name, input.value);
 						case 'file':
+							if (input.files!=null && input.files.length>0)
+								addUpload(input.name, input.files);
 					}
 				case 'TEXTAREA':
 					var ta = Std.instance(elm,TextAreaElement);
@@ -168,17 +182,41 @@ class PushState
 					Reflect.setField(paramsObj, p.name, [p.val]);
 			}
 			Reflect.setField( paramsObj, "__postData", paramString );
-			push(form.action,paramsObj);
+			if (uploads!=null)
+				setUploadsForState( form.action, paramsObj, uploads );
+			push(form.action,paramsObj,uploads);
 		}
 		else {
 			push(form.action+"?"+paramString,null);
 		}
 	}
 
+	static function setUploadsForState(url:String, state:Dynamic, uploads:Null<Dynamic<FileList>>) {
+		var timestamp = Date.now().toString();
+		var random = Math.random();
+		var uploadCacheID = '$url-$timestamp-$random';
+		uploadCache[uploadCacheID] = uploads;
+		Reflect.setField(state, "__postFilesCacheID", uploadCacheID);
+	}
+
+	static function getUploadsForState(state:Dynamic):Null<Dynamic<FileList>> {
+		if (state==null || Reflect.hasField(state,"__postFilesCacheID")==false)
+			return null;
+		var uploadCacheID:String = state.__postFilesCacheID;
+		if ( uploadCache.exists(uploadCacheID)==false ) {
+			trace( 'Upload files with cache ID $uploadCacheID is not available anymore' );
+			return null;
+		}
+		else return uploadCache[uploadCacheID];
+	}
+
 	static function handleOnPopState(e:PopStateEvent) {
 		// Read the path from the document location
 		var path = stripURL(document.location.pathname+document.location.search+document.location.hash);
 		var state = (e!=null) ? e.state : null;
+		var uploads =
+			if (state!=null && state.__postFilesCacheID!=null) uploadCache[state.__postFilesCacheID]
+			else null;
 
 		// If this is just a hash change, and we're ignoring anchors, then don't trigger anything.
 		if (ignoreAnchors && path==currentPath) {
@@ -188,9 +226,10 @@ class PushState
 		// Check that no preventers are blocking us
 		if (e!=null) {
 			for (p in preventers) {
-				if ( !p(path, e.state) ) {
-						e.preventDefault();
-					history.replaceState( currentState, "", currentPath );
+				if ( !p(path, state, uploads) ) {
+					e.preventDefault();
+					// The uploads should already be cached for this state, so just calling `relaceState` without affecting the uploadCache should be sufficient.
+					window.history.replaceState( currentState, "", currentPath );
 					return;
 				}
 			}
@@ -198,8 +237,9 @@ class PushState
 
 		currentPath = path;
 		currentState = state;
+		currentUploads = getUploadsForState(state);
 
-		dispatch(currentPath, currentState);
+		dispatch(currentPath, currentState, currentUploads);
 		return;
 	}
 
@@ -214,22 +254,23 @@ class PushState
 	}
 
 	/**
-		Add event listener
+		Add event listener to be run every time the page URL changes.
 
-		Event listeners take the form `function (url:String, state:Dynamic):Void`
+		Event listeners can take one of the following forms:
 
-		Alternatively a simple form `function (url:String):Void` can be used.
+		- `function( url:String, state:Dynamic, files:Dynamic<FileList> ):Void`
+		- `function( url:String, state:Dynamic ):Void`
+		- `function( url:String ):Void`
 
 		This will return the Listener that you added, which is handy for removing it later.
 	**/
-	public static function addEventListener(?l:Listener, ?s:SimpleListener):Listener {
-		if ( l!=null ) {
-			listeners.push( l );
-		}
-		else if ( s!=null ) {
-			l = function( url, _ ) return s( url );
-			listeners.push( l );
-		}
+	public static function addEventListener(?l1:PathStateUploadsListener, ?l2:PathStateListener, ?l3:PathListener):Listener {
+		var l =
+			if ( l1!=null ) l1
+			else if ( l2!=null ) function( url, state, _ ) l2( url, state )
+			else if ( l3!=null ) function( url, _, _ ) l3( url )
+			else throw 'No listener provided';
+		listeners.push( l );
 		return l;
 	}
 
@@ -252,30 +293,34 @@ class PushState
 	/**
 		Add a preventer
 
-		A preventer is a simple function that takes the form `function (url:String, state:Dynamic):Bool`
+		A preventer function can take the following forms:
 
-		If it returns false, will prevent the page history from being changed and any listeners from being fired.
+		- `function( url:String, state:Dynamic, files:Dynamic<FileList> ):Bool`
+		- `function( url:String, state:Dynamic ):Bool`
+		- `function( url:String ):Bool`
 
-		Alternatively, a simpler `function (url:String):Bool` syntax may be used.
+		If a preventer returns false, PushState will prevent the page history from being changed and any listeners from being fired.
+
+		This is useful for things like ensuring a user has saved their progress before leaving the page.
 
 		If you wish merely to defer the change in state, you can keep the url and state data and use it again with:
-		  `Pushstate.push( url, state );`
+		  `Pushstate.push( url, state, uploads );`
 		at a later time.
 
 		**Note**: If a preventer cancels a "popstate" event from the browser (eg. they clicked 'back'), your history can get messed up.
 		We can't cancel the event properly, so we prevent the handlers from firing and we use `history.replaceState` to reset the URL.
-		This will overwrite that URL in the history, which may not be the behaviour you want.  If you have a suggested workaround, please let me know!
+		This will overwrite that URL in the history, which may not be the behaviour you want.
+		If you have a suggested workaround, please let me know!
 
 		This returns the preventer added, so you can remove it later.
 	**/
-	public static function addPreventer(?p:Preventer, ?s:SimplePreventer):Preventer {
-		if (p!=null) {
-			preventers.push( p );
-		}
-		else if (s!=null) {
-			p = function( url, _ ) return s( url );
-			preventers.push( p );
-		}
+	public static function addPreventer(?p1:PathStateUploadsPreventer, ?p2:PathStatePreventer, ?p3:PathPreventer):Preventer {
+		var p =
+			if ( p1!=null ) p1
+			else if ( p2!=null ) function( url, state, _ ) return p2( url, state )
+			else if ( p3!=null ) function( url, _, _ ) return p3( url )
+			else throw 'No preventer provided';
+		preventers.push( p );
 		return p;
 	}
 
@@ -291,9 +336,9 @@ class PushState
 		}
 	}
 
-	static function dispatch(url:String, state:Null<Dynamic>) {
+	static function dispatch(url:String, state:Null<Dynamic>, uploads:Null<Dynamic<FileList>>) {
 		for (l in listeners) {
-			l(url, state);
+			l(url, state, uploads);
 		}
 	}
 
@@ -315,16 +360,18 @@ class PushState
 		The state object is a JavaScript object which is associated with the new history entry created by pushState(). Whenever the user navigates to the new state, a popstate event is fired, and the state property of the event contains a copy of the history entry's state object.
 		The state object can be anything that can be serialized. Because Firefox saves state objects to the user's disk so they can be restored after the user restarts her browser, we impose a size limit of 640k characters on the serialized representation of a state object. If you pass a state object whose serialized representation is larger than this to pushState(), the method will throw an exception. If you need more space than this, you're encouraged to use sessionStorage and/or localStorage.
 	**/
-	public static function push(url:String, ?state:Dynamic):Bool {
+	public static function push(url:String, ?state:Dynamic, ?uploads:Dynamic<FileList>):Bool {
 		var strippedURL = stripURL(url);
 		if (state==null) state = {};
 		for (p in preventers) {
-			if (!p(strippedURL,state)) return false;
+			if (!p(strippedURL,state,uploads)) return false;
 		}
-		history.pushState(state, "", url);
+		setUploadsForState(strippedURL, state, uploads);
+		window.history.pushState(state, "", url);
 		currentPath = strippedURL;
 		currentState = state;
-		dispatch(strippedURL,state);
+		currentUploads = uploads;
+		dispatch(strippedURL,state,uploads);
 		return true;
 	}
 
@@ -341,30 +388,36 @@ class PushState
 
 		Will return true if the request was successful (not prevented) or false if it was prevented.
 	**/
-	public static function replace(url:String, ?state:Dynamic):Bool {
+	public static function replace(url:String, ?state:Dynamic, ?uploads:Dynamic<FileList>):Bool {
 		var strippedURL = stripURL(url);
 		if (state==null) state = {};
 		for (p in preventers) {
-			if (!p(strippedURL,state)) return false;
+			if (!p(strippedURL,state,uploads)) return false;
 		}
-		silentReplace(url, state);
-		dispatch(strippedURL,state);
+		silentReplace(url, state, uploads);
+		dispatch(strippedURL, state, uploads);
 		return true;
 	}
 
 	/**
 		Replace the current history item without checking any preventers or dispatching any events.
 	**/
-	public static function silentReplace(url:String, ?state:Dynamic):Void {
+	public static function silentReplace(url:String, ?state:Dynamic, ?uploads:Dynamic<FileList>):Void {
 		var strippedURL = stripURL(url);
 		if (state==null) state = {};
-		history.replaceState(state, "", url);
+		setUploadsForState(strippedURL, state, uploads);
+		window.history.replaceState(state, "", url);
 		currentPath = strippedURL;
 		currentState = state;
+		currentUploads = uploads;
 	}
 }
 
-typedef Listener = String->Dynamic->Void;
-typedef Preventer = String->Dynamic->Bool;
-typedef SimpleListener = String->Void;
-typedef SimplePreventer = String->Bool;
+typedef Listener = PathStateUploadsListener;
+typedef Preventer = PathStateUploadsPreventer;
+typedef PathStateUploadsListener = String->Dynamic->Dynamic<FileList>->Void;
+typedef PathStateUploadsPreventer = String->Dynamic->Dynamic<FileList>->Bool;
+typedef PathStateListener = String->Dynamic->Void;
+typedef PathStatePreventer = String->Dynamic->Bool;
+typedef PathListener = String->Void;
+typedef PathPreventer = String->Bool;
