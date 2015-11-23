@@ -13,7 +13,6 @@ package pushstate;
 
 import js.Browser.*;
 import js.html.*;
-import pushstate.History;
 using StringTools;
 
 /**
