@@ -25,43 +25,57 @@ class Test
 		PushState.init();
 
 		// Next we add a listener to any changes
-		PushState.addEventListener(function (url,state) {
+		PushState.addEventListener(function (url,state,uploads) {
 			window.console.log('New pushstate URL: $url');
 
-			if (url.endsWith("/custom")) {
-				var animal = state.animal[0];
-				console.log('Redirecting to /$animal');
-				PushState.replace( '$animal' );
-			}
-			else {
-				// Show user if this was a page reload or pushstate
-				stateChangeCount++;
-				if (stateChangeCount > 1)
-				{
-					document.getElementById("load-type").innerHTML = "This content was a push-state";
-				}
-
+			if (url.endsWith("/custom")==false) {
 				// Change the content.
 				// In real life this would probably be an AJAX call and some complex logic.
+				incrementPushstateCounter();
 				document.getElementById("content").innerHTML = 'I want to become a $url';
+			}
+			else {
+				if (uploads==null) {
+					// Read the variable from the form submission.
+					var animal = state.animal[0];
+					console.log('Redirecting to /$animal');
+					PushState.replace( '$animal' );
+				}
+				else {
+					// Read the variable from an uploaded file.
+					incrementPushstateCounter();
+					var fileList = uploads.photo;
+					var fr = new FileReader();
+					fr.onload = function() {
+						var dataUrl:String = fr.result;
+						document.getElementById("content").innerHTML = 'I want to become a <img src="$dataUrl" />';
+					};
+					fr.readAsDataURL( fileList[0] );
+					// PushState saves a reference to the FileList, but if the <input type="file"> changes,
+					// it will change the file recorded in history too. The workaround is to remove the InputElement
+					// from the DOM, and replace it with a new InputElement.
+					var fileInput = document.getElementById("photo");
+					fileInput.parentNode.insertBefore(fileInput.cloneNode(),fileInput);
+					fileInput.parentNode.removeChild(fileInput);
+				}
 			}
 		});
 
 		document.addEventListener("DOMContentLoaded", function(event) {
-			// J("#animal-form").submit(function (e) {
-			// 	// When the form is submitted, use the value of the input as our new URL, and trigger PushState
-			// 	var value = JTHIS.find("input").val();
-			// 	PushState.push("/" + value);
-			// 	e.preventDefault();
-			// });
-
-			// Escape artist.
-
 			// Set up a preventer.
 			var btn = document.getElementById("toggle-preventer");
 			var preventer = function(url) return js.Browser.window.confirm('Switch to $url?');
 			setupPreventerToggle( btn, preventer );
 		});
+	}
+
+	static function incrementPushstateCounter() {
+		// Show user if this was a page reload or pushstate
+		stateChangeCount++;
+		if (stateChangeCount > 1)
+		{
+			document.getElementById("load-type").innerHTML = "This content was a push-state";
+		}
 	}
 
 	static function setupPreventerToggle(btn:Element, preventer:String->Bool) {
