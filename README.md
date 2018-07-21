@@ -54,11 +54,16 @@ To change the URL without creating a new item in the browser history
 
 ### Demo
 
-To run the demo:
+To run the demo with Neko:
 
 1. Clone the repository, and run `haxe build.hxml`.  
 2. From the 'build' directory, run `nekotools server -rewrite`
 3. Open `http://localhost:2000/` in your browser
+
+To run the demo with Apache:
+
+1. Clone the repository, and run `haxe build.hxml`.  
+2. Copy the contents of the 'build' directory to an active Apache server supporting PHP. WAMP, LAMP, or MAMP are good options for local testing.
 
 This demo shows a few things:
 
