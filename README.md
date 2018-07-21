@@ -63,7 +63,7 @@ To run the demo with Neko:
 To run the demo with Apache:
 
 1. Clone the repository, and run `haxe build.hxml`.  
-2. Copy the contents of the 'build' directory to an active Apache server supporting PHP. WAMP, LAMP, or MAMP are good options for local testing.
+2. Copy the contents of the 'build' directory to an active Apache server supporting PHP. (WAMP, LAMP, or MAMP are good options for local testing).
 
 This demo shows a few things:
 
