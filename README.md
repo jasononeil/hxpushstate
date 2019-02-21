@@ -62,17 +62,14 @@ To run the demo:
 
 This demo shows a few things:
 
- * Listening to pushstate events and updating the page accordingly
- * Using rel="pushstate" to trigger changes to the page's history
- * Using JS events (triggered from a form in this case) to trigger changes to the page's history
- * Using forward and back to trigger changes to the page's history
- * Providing a fallback for cases where the JS wasn't triggered, e.g. Old browsers, deep linking from another site or bookmark, etc.  The way this works:
- 	* When the page first loads, we check the URL
- 	* If it's not the default, we trigger a pushstate event and let the content update itself.
- 	* This ensures the code will work on older browsers, or if someone arrives via a link or bookmark, etc.
+- Listening to PushState events and updating the page accordingly
+- Using PushState links to trigger changes to the page's history
+- Using PushState forms to read form data and save it in the page's history
+- Using PushState forms to keep track of an upload.
+- Using forward and back to trigger changes to the page's history.
+- Using a Preventer to stop the user from changing the URL.
+- Providing a fallback for cases where the JS wasn't triggered, e.g. Old browsers, deep linking from another site or bookmark, etc.  The way this works:
+	- When the page first loads, we trigger a PushState event and let the content update itself.
+	- This ensures the code will work on older browsers, or if someone arrives via a link or bookmark, etc.
 
-[Click here to view the source of the demo](https://github.com/jasononeil/hxpushstate/blob/master/src/demo/Test.hx)
-
-### Notes
-
-Currently this library is dependant on jQuery from the Haxe Standard Library, though this can probably be removed easily enough if there is demand for it.
+[Click here to view the source of the demo](https://github.com/jasononeil/hxpushstate/blob/master/demo/Test.hx)
