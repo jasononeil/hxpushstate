@@ -77,7 +77,3 @@ This demo shows a few things:
  	* This ensures the code will work on older browsers, or if someone arrives via a link or bookmark, etc.
 
 [Click here to view the source of the demo](https://github.com/jasononeil/hxpushstate/blob/master/src/demo/Test.hx)
-
-### Notes
-
-Currently this library is dependant on jQuery from the Haxe Standard Library, though this can probably be removed easily enough if there is demand for it.
