@@ -36,11 +36,11 @@ for older browsers.
 **/
 class PushState {
 	static var ignoreAnchors:Bool = true;
+	static var triggerFirst:Bool = true;
 	static var basePath:String;
 	static var preventers:Array<Preventer>;
 	static var listeners:Array<Listener>;
 	static var uploadCache:Map<String,Dynamic<FileList>>;
-
 	/** The URL of the current history item (what is showing in the URL bar currently). **/
 	public static var currentPath(default,null):String;
 	/** The state object of the current history item. **/
@@ -70,10 +70,18 @@ class PushState {
 		preventers = [];
 		uploadCache = new Map();
 		PushState.basePath = basePath;
+		PushState.triggerFirst = triggerFirst;
 		PushState.ignoreAnchors = ignoreAnchors;
 
-		// This event if not supported by IE8, but then neither is the History.pushstate API.
-		document.addEventListener("DOMContentLoaded", function(event) {
+
+		//https://developer.mozilla.org/en-US/docs/Web/Events/DOMContentLoaded#Checking_whether_loading_is_already_complete
+		if (document.readyState == "loading") {
+			document.addEventListener("DOMContentLoaded",finishInit);
+		} else {
+			finishInit();
+		}
+	}
+	static function finishInit(){
 			// Intercept <a href="..." rel="pushstate"> clicks.
 			// TODO: check, does this break keyboard navigation?
 			document.addEventListener("click",function(e:MouseEvent) {
@@ -112,7 +120,7 @@ class PushState {
 				currentState = null;
 				currentUploads = null;
 			}
-		});
+
 	}
 
 	inline static function hasClass(elm:Element, className:String) {
